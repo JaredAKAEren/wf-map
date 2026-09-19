@@ -1,0 +1,28 @@
+button {
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast),
+    box-shadow var(--duration-fast);
+}
+
+.float-enter-active,
+.float-leave-active {
+  transition:
+    opacity var(--duration-normal),
+    transform var(--duration-normal);
+}
+
+.float-enter-from,
+.float-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

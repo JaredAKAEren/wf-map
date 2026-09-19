@@ -1,0 +1,24 @@
+:root {
+  /* WF 官方头像取色；深橙用于小号文字，纯白用于橙色底上的文字。 */
+  --color-primary: #f4980f;
+  --color-on-primary: #fff;
+  --color-primary-ink: #925000;
+  --color-accent-soft: #fff0d9;
+  --color-muted: #81776c;
+  --color-surface: rgb(255 253 249 / 90%);
+  --color-text: #30271d;
+  --color-map: #f0ede7;
+  --color-border: #e8dfd2;
+  --color-handle: #cec3b5;
+  --color-highlight: rgb(244 152 15 / 18%);
+  --radius-small: 12px;
+  --radius-floating: 26px;
+  --radius-pill: 999px;
+  --glass-border: rgb(255 255 255 / 80%);
+  --shadow-floating: 0 3px 10px rgb(60 39 15 / 7%), 0 12px 32px rgb(60 39 15 / 10%);
+  --glass-blur: 18px;
+  --duration-fast: 160ms;
+  --duration-normal: 240ms;
+  --control-size: 48px;
+  --screen-padding: 12px;
+}

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: voidzero-dev/setup-vp@v1.17.0
+        with:
+          node-version-file: .node-version
+          cache: true
+      - run: vp install --frozen-lockfile
+      - run: vp run check
+      - run: vp run test
+      - run: vp exec playwright install --with-deps chromium
+      - run: vp run test:e2e
+      - run: vp run build
+      - name: 检查 PR 提交说明
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: vp exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+      - name: 检查最新提交说明
+        if: github.event_name == 'push'
+        run: vp exec commitlint --last --verbose

@@ -1,0 +1,47 @@
+{
+  "name": "wf-map",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev --host 127.0.0.1",
+    "build": "vue-tsc --noEmit && vp build",
+    "check": "vp check && vp run typecheck && vp run stylelint",
+    "typecheck": "vue-tsc --noEmit",
+    "stylelint": "stylelint \"src/**/*.{css,vue}\"",
+    "test": "vp test run",
+    "test:e2e": "playwright test",
+    "android:sync": "vp run build && cap sync android",
+    "android:debug": "vp run android:sync && node scripts/android-build.mjs",
+    "android:deploy": "node scripts/android-deploy.mjs",
+    "android:release": "vp run android:sync && node scripts/android-build.mjs :app:lintRelease :app:assembleRelease",
+    "prepare": "vp config --no-agent",
+    "preview": "vp preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.1",
+    "@capacitor/core": "8.5.1",
+    "@capacitor/preferences": "8.0.1",
+    "reka-ui": "2.10.4",
+    "vue": "3.5.42"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.1",
+    "@commitlint/cli": "21.2.2",
+    "@commitlint/config-conventional": "21.2.2",
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.13.3",
+    "@vitejs/plugin-vue": "6.0.8",
+    "postcss-html": "2.0.0",
+    "stylelint": "17.15.0",
+    "stylelint-config-standard": "40.0.0",
+    "typescript": "5.9.3",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vue-tsc": "3.3.11"
+  },
+  "engines": {
+    "node": "24.20.0"
+  },
+  "packageManager": "pnpm@11.25.0"
+}

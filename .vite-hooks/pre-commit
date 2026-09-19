@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+repo_root="$(git rev-parse --show-toplevel)"
+vp -C "$repo_root" staged
+exec vp -C "$repo_root" run typecheck

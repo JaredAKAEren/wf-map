@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+repo_root="$(git rev-parse --show-toplevel)"
+message_file="$1"
+case "$message_file" in
+  /*) ;;
+  *) message_file="$repo_root/$message_file" ;;
+esac
+exec vp -C "$repo_root" exec commitlint --config commitlint.config.mjs --edit "$message_file"

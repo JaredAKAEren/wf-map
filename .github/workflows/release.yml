@@ -1,0 +1,146 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: 校验发布标签
+        id: version
+        shell: bash
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "标签必须使用 v主版本.次版本.修订号，例如 v0.1.0。" >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "发布标签必须指向 main 分支中的提交。" >&2
+            exit 1
+          fi
+
+          major="${BASH_REMATCH[1]}"
+          minor="${BASH_REMATCH[2]}"
+          patch="${BASH_REMATCH[3]}"
+          if (( major > 2100 || minor > 999 || patch > 999 )); then
+            echo "版本号超出 Android versionCode 映射范围。" >&2
+            exit 1
+          fi
+
+          version_name="${GITHUB_REF_NAME#v}"
+          version_code=$((major * 1000000 + minor * 1000 + patch))
+          if (( version_code < 1 || version_code > 2100000000 )); then
+            echo "生成的 Android versionCode 不在有效范围内。" >&2
+            exit 1
+          fi
+
+          echo "name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "code=$version_code" >> "$GITHUB_OUTPUT"
+
+      - name: 检查签名配置
+        shell: bash
+        run: |
+          for name in \
+            ANDROID_KEYSTORE_BASE64 \
+            ANDROID_KEYSTORE_PASSWORD \
+            ANDROID_KEY_ALIAS \
+            ANDROID_KEY_PASSWORD; do
+            if [[ -z "${!name}" ]]; then
+              echo "缺少 GitHub Actions Secret：$name" >&2
+              exit 1
+            fi
+          done
+
+      - uses: voidzero-dev/setup-vp@v1.17.0
+        with:
+          node-version-file: .node-version
+          cache: true
+
+      - uses: actions/setup-java@v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: 配置 Android SDK 36
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
+
+      - name: 安装依赖并检查
+        run: |
+          vp install --frozen-lockfile
+          vp run check
+          vp run test
+          vp exec playwright install --with-deps chromium
+          CI=1 vp run test:e2e
+
+      - name: 恢复发布签名
+        shell: bash
+        run: |
+          keystore_file="$RUNNER_TEMP/wf-map-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_file"
+          chmod 600 "$keystore_file"
+          echo "ANDROID_KEYSTORE_FILE=$keystore_file" >> "$GITHUB_ENV"
+
+      - name: 构建正式 APK
+        env:
+          ANDROID_VERSION_CODE: ${{ steps.version.outputs.code }}
+          ANDROID_VERSION_NAME: ${{ steps.version.outputs.name }}
+        run: vp run android:release
+
+      - name: 校验并整理 APK
+        id: artifact
+        shell: bash
+        run: |
+          source_apk="android/app/build/outputs/apk/release/app-release.apk"
+          if [[ ! -f "$source_apk" ]]; then
+            echo "未找到正式 APK：$source_apk" >&2
+            exit 1
+          fi
+
+          output_dir="$RUNNER_TEMP/release"
+          output_apk="$output_dir/wf-map-$GITHUB_REF_NAME.apk"
+          mkdir -p "$output_dir"
+          cp "$source_apk" "$output_apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify \
+            --verbose \
+            --print-certs \
+            "$output_apk"
+          (
+            cd "$output_dir"
+            sha256sum "$(basename "$output_apk")" > "$(basename "$output_apk").sha256"
+          )
+          echo "apk=$output_apk" >> "$GITHUB_OUTPUT"
+          echo "checksum=$output_apk.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: 发布 GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_PATH: ${{ steps.artifact.outputs.apk }}
+          CHECKSUM_PATH: ${{ steps.artifact.outputs.checksum }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "$APK_PATH" \
+            "$CHECKSUM_PATH" \
+            --generate-notes \
+            --verify-tag
