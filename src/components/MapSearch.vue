@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxRoot,
+  ComboboxViewport,
+} from "reka-ui";
 import { computed, nextTick, ref } from "vue";
 
 import { booths, type Booth } from "../data/exhibition";
@@ -8,20 +15,26 @@ import AppIcon from "./ui/AppIcon.vue";
 const props = defineProps<{ preferredHall?: string }>();
 const emit = defineEmits<{ select: [booth: Booth]; open: [value: boolean] }>();
 const opened = ref(false);
-const input = ref<HTMLInputElement>();
+const input = ref<{ $el: HTMLInputElement }>();
 const trigger = ref<HTMLButtonElement>();
 const query = ref("");
 const results = computed(() => {
   return searchBooths(query.value, booths, props.preferredHall);
 });
+
+function inputElement() {
+  return input.value?.$el;
+}
+
 async function expand() {
   opened.value = true;
   emit("open", true);
   await nextTick();
-  input.value?.focus();
+  inputElement()?.focus();
 }
+
 async function close(restoreFocus = true) {
-  input.value?.blur();
+  inputElement()?.blur();
   opened.value = false;
   emit("open", false);
   await nextTick();
@@ -32,13 +45,20 @@ async function close(restoreFocus = true) {
 
 function clearQuery() {
   query.value = "";
-  input.value?.focus();
+  inputElement()?.focus();
 }
 
 function choose(booth: Booth) {
   emit("select", booth);
   void close();
 }
+
+function handleComboboxOpen(value: boolean) {
+  if (!value && opened.value) {
+    void close();
+  }
+}
+
 defineExpose({ close });
 </script>
 
@@ -55,48 +75,74 @@ defineExpose({ close });
     </button>
     <Transition name="search-expand">
       <div v-if="opened" class="search-panel">
-        <form class="search-form ui-surface" role="search" @submit.prevent="input?.blur()">
-          <input
-            ref="input"
-            v-model="query"
-            aria-label="搜索展商或展位号"
-            placeholder="搜索展商、拼音或展位号"
-            enterkeyhint="search"
-            autocomplete="off"
-          />
-          <button
-            v-if="query"
-            class="clear-query"
-            type="button"
-            aria-label="清除搜索内容"
-            @pointerdown.prevent
-            @click="clearQuery"
+        <ComboboxRoot
+          class="search-combobox"
+          :open="opened"
+          :ignore-filter="true"
+          :reset-search-term-on-blur="false"
+          :reset-search-term-on-select="false"
+          @update:open="handleComboboxOpen"
+        >
+          <form
+            class="search-form ui-surface"
+            role="search"
+            @submit.prevent="inputElement()?.blur()"
           >
-            <AppIcon class="clear-icon" name="close" />
-          </button>
-          <button class="text-button" type="button" @click="close()">取消</button>
-        </form>
+            <ComboboxInput ref="input" v-model="query" auto-focus as-child>
+              <input
+                aria-label="搜索展商或展位号"
+                placeholder="搜索展商、拼音或展位号"
+                enterkeyhint="search"
+                autocomplete="off"
+              />
+            </ComboboxInput>
+            <button
+              v-if="query"
+              class="clear-query"
+              type="button"
+              aria-label="清除搜索内容"
+              @pointerdown.prevent
+              @click="clearQuery"
+            >
+              <AppIcon class="clear-icon" name="close" />
+            </button>
+            <button class="ui-text-button" type="button" @click="close()">取消</button>
+          </form>
 
-        <section class="search-results ui-surface" aria-label="搜索结果">
-          <p v-if="!query.trim()" class="muted">
-            输入展商名称、拼音或展位号<br />目前可搜索 W5 展位
-          </p>
-          <p v-else-if="!results.length" class="muted" role="status">
-            未找到匹配展位。当前可搜索 W5 展位。
-          </p>
-          <template v-else>
-            <p class="muted" role="status">{{ results.length }} 个匹配展位</p>
-            <ul>
-              <li v-for="item in results" :key="item.id">
-                <button @click="choose(item)">
-                  <b>{{ item.hall }} · {{ item.code }}</b>
-                  <span>{{ item.names.join(" / ") || "名称待补充" }}</span>
-                  <span class="result-arrow" aria-hidden="true">›</span>
-                </button>
-              </li>
-            </ul>
-          </template>
-        </section>
+          <ComboboxContent
+            as="section"
+            class="search-results ui-surface"
+            aria-label="搜索结果"
+            @pointer-down-outside.prevent
+            @focus-outside.prevent
+            @interact-outside.prevent
+          >
+            <p v-if="!query.trim()" class="ui-muted">
+              输入展商名称、拼音或展位号<br />目前可搜索 W5 展位
+            </p>
+            <p v-else-if="!results.length" class="ui-muted" role="status">
+              未找到匹配展位。当前可搜索 W5 展位。
+            </p>
+            <template v-else>
+              <p class="ui-muted" role="status">{{ results.length }} 个匹配展位</p>
+              <ComboboxViewport as="ul">
+                <li v-for="item in results" :key="item.id">
+                  <ComboboxItem
+                    as="button"
+                    type="button"
+                    :value="item"
+                    :text-value="`${item.hall} ${item.code} ${item.names.join(' ')}`"
+                    @select="choose(item)"
+                  >
+                    <b>{{ item.hall }} · {{ item.code }}</b>
+                    <span>{{ item.names.join(" / ") || "名称待补充" }}</span>
+                    <span class="result-arrow" aria-hidden="true">›</span>
+                  </ComboboxItem>
+                </li>
+              </ComboboxViewport>
+            </template>
+          </ComboboxContent>
+        </ComboboxRoot>
       </div>
     </Transition>
   </div>
@@ -107,18 +153,15 @@ defineExpose({ close });
   position: relative;
   flex: 1;
   min-width: 0;
-  height: var(--control-size);
-  pointer-events: none;
 }
 
 .map-search > button {
-  pointer-events: auto;
+  position: absolute;
 }
 
 .search-panel {
   position: absolute;
   inset: 0 0 auto;
-  pointer-events: auto;
   transform-origin: 24px 24px;
 }
 
@@ -188,7 +231,7 @@ defineExpose({ close });
   outline: none;
 }
 
-.search-form .text-button {
+.search-form .ui-text-button {
   flex-shrink: 0;
   min-height: 44px;
 }
@@ -217,6 +260,10 @@ defineExpose({ close });
   text-align: left;
   background: transparent;
   padding: 12px 24px 12px 0;
+}
+
+.search-results li button[data-highlighted] {
+  background: var(--color-accent-soft);
 }
 
 .search-results b {

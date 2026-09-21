@@ -24,6 +24,7 @@ button {
   cursor: pointer;
   color: inherit;
   border: 0;
+  outline: none;
 }
 
 button:disabled {
@@ -31,7 +32,6 @@ button:disabled {
   opacity: 0.5;
 }
 
-button:focus-visible,
 input:focus-visible {
   outline: 3px solid var(--color-primary);
   outline-offset: 3px;
