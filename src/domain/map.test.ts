@@ -123,6 +123,13 @@ describe("展位查找与位置", () => {
       entry: undefined,
     });
   });
+
+  it("支持 W4 展商的英文别名、全拼和拼音首字母搜索", () => {
+    expect(searchBooths("HAVOC", booths, "W4")[0]?.booth.id).toBe("wf2026/W4/A01");
+    expect(searchBooths("haxzw", booths, "W4")[0]?.booth.id).toBe("wf2026/W4/A01");
+    expect(searchBooths("coreplay", booths, "W4")[0]?.booth.id).toBe("wf2026/W4/A13");
+    expect(searchBooths("plzgydzx", booths, "W4")[0]?.booth.id).toBe("wf2026/W4/A31");
+  });
 });
 
 describe("展位数据约束", () => {
