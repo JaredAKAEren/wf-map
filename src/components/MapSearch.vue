@@ -8,11 +8,11 @@ import {
 } from "reka-ui";
 import { computed, nextTick, ref } from "vue";
 
-import { booths, type Booth } from "../data/exhibition";
-import { searchBooths } from "../domain/map";
+import { booths, type Booth, type Hall } from "../data/exhibition";
+import { searchBooths, type BoothSearchResult } from "../domain/map";
 import AppIcon from "./ui/AppIcon.vue";
 
-const props = defineProps<{ preferredHall?: string }>();
+const props = defineProps<{ preferredHall?: Hall }>();
 const emit = defineEmits<{ select: [booth: Booth]; open: [value: boolean] }>();
 const opened = ref(false);
 const input = ref<{ $el: HTMLInputElement }>();
@@ -48,8 +48,43 @@ function clearQuery() {
   inputElement()?.focus();
 }
 
-function choose(booth: Booth) {
-  emit("select", booth);
+function resultCode(result: BoothSearchResult) {
+  const slot = result.entry?.slot;
+
+  return slot ? `${result.booth.code}-${slot}` : result.booth.code;
+}
+
+function resultSummary(result: BoothSearchResult) {
+  if (result.entry) {
+    return result.entry.names.join(" / ");
+  }
+
+  const personalCount = result.booth.entries.filter((entry) => {
+    return entry.slot;
+  }).length;
+  if (personalCount) {
+    return `${personalCount} 个个人展商`;
+  }
+
+  return (
+    result.booth.entries
+      .flatMap((entry) => {
+        return entry.names;
+      })
+      .join(" / ") || "名称待补充"
+  );
+}
+
+function resultTextValue(result: BoothSearchResult) {
+  return `${result.booth.hall} ${resultCode(result)} ${resultSummary(result)}`;
+}
+
+function resultKey(result: BoothSearchResult) {
+  return `${result.booth.id}/${result.entry?.slot ?? (result.entry ? "entry" : "region")}`;
+}
+
+function choose(result: BoothSearchResult) {
+  emit("select", result.booth);
   void close();
 }
 
@@ -118,24 +153,24 @@ defineExpose({ close });
             @interact-outside.prevent
           >
             <p v-if="!query.trim()" class="ui-muted">
-              输入展商名称、拼音或展位号<br />目前可搜索 W5 展位
+              输入展商名称、拼音或展位号<br />目前可搜索 W1—W5 展位
             </p>
             <p v-else-if="!results.length" class="ui-muted" role="status">
-              未找到匹配展位。当前可搜索 W5 展位。
+              未找到匹配展位。当前可搜索 W1—W5 展位。
             </p>
             <template v-else>
               <p class="ui-muted" role="status">{{ results.length }} 个匹配展位</p>
               <ComboboxViewport as="ul">
-                <li v-for="item in results" :key="item.id">
+                <li v-for="item in results" :key="resultKey(item)">
                   <ComboboxItem
                     as="button"
                     type="button"
                     :value="item"
-                    :text-value="`${item.hall} ${item.code} ${item.names.join(' ')}`"
+                    :text-value="resultTextValue(item)"
                     @select="choose(item)"
                   >
-                    <b>{{ item.hall }} · {{ item.code }}</b>
-                    <span>{{ item.names.join(" / ") || "名称待补充" }}</span>
+                    <b>{{ item.booth.hall }} · {{ resultCode(item) }}</b>
+                    <span>{{ resultSummary(item) }}</span>
                     <span class="result-arrow" aria-hidden="true">›</span>
                   </ComboboxItem>
                 </li>

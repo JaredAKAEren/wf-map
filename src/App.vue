@@ -7,13 +7,13 @@ import MapSearch from "./components/MapSearch.vue";
 import AppIcon from "./components/ui/AppIcon.vue";
 import HallSwitcher from "./components/ui/HallSwitcher.vue";
 import { useMapViewport } from "./composables/useMapViewport";
-import { booths, halls, type Booth } from "./data/exhibition";
+import { booths, halls, isHall, type Booth, type Hall } from "./data/exhibition";
 import type { Point, View } from "./domain/viewport";
 
 const map = ref<SVGSVGElement>();
 const search = ref<InstanceType<typeof MapSearch>>();
 const selectedId = ref("");
-const hall = ref("W5");
+const hall = ref<Hall>("W5");
 const notice = ref("");
 const searchOpen = ref(false);
 const ready = ref(false);
@@ -24,7 +24,7 @@ const selected = computed(() => {
   });
 });
 
-const offset = (name: string) => {
+const offset = (name: Hall) => {
   return halls.indexOf(name) * 860;
 };
 
@@ -64,7 +64,7 @@ const { view, viewBox, moveTo, zoom, down, move, up, cancel, wheel } = useMapVie
   onSelect: selectAt,
 });
 
-function focusHall(name: string) {
+function focusHall(name: Hall) {
   hall.value = name;
   selectedId.value = "";
   moveTo({ x: offset(name) + 50, y: 160, width: 700, height: 1260 });
@@ -145,8 +145,7 @@ onMounted(async () => {
     if (saved.value) {
       const state = JSON.parse(saved.value) as Record<string, unknown>;
       selectedId.value = validId(state.selectedId);
-      const savedHall =
-        typeof state.hall === "string" && halls.includes(state.hall) ? state.hall : undefined;
+      const savedHall = isHall(state.hall) ? state.hall : undefined;
       if (savedHall) {
         hall.value = savedHall;
       }

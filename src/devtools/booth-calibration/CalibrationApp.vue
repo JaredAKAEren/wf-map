@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from "vue";
 
-import { booths, halls, type Booth } from "../../data/exhibition";
+import { booths, halls, isHall, type Booth } from "../../data/exhibition";
 import {
   adjustBounds,
   constrainBounds,
@@ -37,7 +37,7 @@ const handleDefinitions: { operation: Exclude<DragOperation, "move">; x: number;
 ];
 const query = new URLSearchParams(window.location.search);
 const requestedHall = query.get("hall")?.toUpperCase();
-const initialHall = requestedHall && halls.includes(requestedHall) ? requestedHall : "W5";
+const initialHall = isHall(requestedHall) ? requestedHall : "W5";
 const selectedHall = ref(initialHall);
 const selectedId = ref("");
 const coordinates = ref<CoordinateMap>({});
@@ -513,7 +513,15 @@ onMounted(() => {
               </button>
             </div>
           </div>
-          <p class="booth-name">{{ selectedBooth.names.join("、") }}</p>
+          <p class="booth-name">
+            {{
+              selectedBooth.entries
+                .flatMap((entry) => {
+                  return entry.names;
+                })
+                .join("、")
+            }}
+          </p>
           <div class="coordinate-grid">
             <label v-for="field in ['x', 'y', 'width', 'height'] as const" :key="field">
               {{ field }}
