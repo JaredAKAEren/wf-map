@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
+import { SplashScreen } from "@capacitor/splash-screen";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 import BoothSheet from "./components/BoothSheet.vue";
@@ -27,8 +29,10 @@ const notice = ref("");
 const searchOpen = ref(false);
 const ready = ref(false);
 const pageHeight = ref("100dvh");
+const settledMaps = new Set<string>();
 let selectionVersion = 0;
 let hallScrub: HallScrub | undefined;
+let launchScreenHidden = false;
 const selected = computed(() => {
   return booths.find((booth) => {
     return booth.id === selectedId.value;
@@ -223,6 +227,30 @@ function cancelHallScrub() {
   moveTo(state.originalView);
 }
 
+async function hideLaunchScreen() {
+  if (
+    !Capacitor.isNativePlatform() ||
+    launchScreenHidden ||
+    !ready.value ||
+    !settledMaps.has(hall.value)
+  ) {
+    return;
+  }
+
+  launchScreenHidden = true;
+  await nextTick();
+  try {
+    await SplashScreen.hide();
+  } catch {
+    // 自动关闭仍会在超时后解除启动页，不能阻塞应用首屏。
+  }
+}
+
+function settleMap(name: string) {
+  settledMaps.add(name);
+  void hideLaunchScreen();
+}
+
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 let saving = Promise.resolve();
 let visualViewport: VisualViewport | null = null;
@@ -303,6 +331,7 @@ onMounted(async () => {
     notice.value = "上次视图无法恢复，已打开 W5 地图。";
   }
   ready.value = true;
+  void hideLaunchScreen();
   persist();
 });
 onUnmounted(() => {
@@ -341,7 +370,13 @@ onUnmounted(() => {
         @wheel.prevent="wheel"
       >
         <g v-for="name in halls" :key="name" :transform="`translate(${offset(name)},0)`">
-          <image :href="`/maps/${name}.png`" width="800" :height="name === 'W1' ? 1500 : 1480" />
+          <image
+            :href="`/maps/${name}.png`"
+            width="800"
+            :height="name === 'W1' ? 1500 : 1480"
+            @load="settleMap(name)"
+            @error="settleMap(name)"
+          />
           <rect
             v-if="selected?.hall === name"
             :x="selected.x - 1"
