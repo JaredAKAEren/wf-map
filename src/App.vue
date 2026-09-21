@@ -238,14 +238,12 @@ onUnmounted(() => {
       </p>
     </Transition>
     <HallSwitcher class="hall-position" :model-value="hall" :halls="halls" @select="focusHall" />
-    <Transition name="sheet">
-      <BoothSheet
-        v-if="selected && !searchOpen"
-        class="sheet-position"
-        :booth="selected"
-        @close="selectedId = ''"
-      />
-    </Transition>
+    <BoothSheet
+      class="sheet-position"
+      :booth="selected"
+      :open="Boolean(selected) && !searchOpen"
+      @close="selectedId = ''"
+    />
   </main>
 </template>
 
@@ -280,11 +278,6 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  pointer-events: none;
-}
-
-.map-header > * {
-  pointer-events: auto;
 }
 
 .map-controls {
@@ -340,6 +333,19 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 8px 12px;
   font-size: 13px;
+}
+
+.float-enter-active,
+.float-leave-active {
+  transition:
+    opacity var(--duration-normal),
+    transform var(--duration-normal);
+}
+
+.float-enter-from,
+.float-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
 }
 
 .selected-booth {
