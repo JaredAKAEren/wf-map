@@ -202,10 +202,10 @@ onUnmounted(() => {
           <image :href="`/maps/${name}.png`" width="800" :height="name === 'W1' ? 1500 : 1480" />
           <rect
             v-if="selected?.hall === name"
-            :x="selected.x - 3"
-            :y="selected.y - 3"
-            :width="selected.width + 6"
-            :height="selected.height + 6"
+            :x="selected.x - 1"
+            :y="selected.y - 1"
+            :width="selected.width + 2"
+            :height="selected.height + 2"
             rx="10"
             class="selected-booth"
           />
@@ -350,7 +350,7 @@ onUnmounted(() => {
 .selected-booth {
   fill: var(--color-highlight);
   stroke: var(--color-primary);
-  stroke-width: 3;
+  stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
 

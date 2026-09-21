@@ -477,11 +477,11 @@ onMounted(() => {
                   :key="handle.operation"
                   class="resize-handle"
                   :class="`handle-${handle.operation}`"
-                  :x="selectedBounds.x + selectedBounds.width * handle.x - 5"
-                  :y="selectedBounds.y + selectedBounds.height * handle.y - 5"
-                  width="10"
-                  height="10"
-                  rx="2"
+                  :x="selectedBounds.x + selectedBounds.width * handle.x - 2"
+                  :y="selectedBounds.y + selectedBounds.height * handle.y - 2"
+                  width="4"
+                  height="4"
+                  rx="1"
                   @pointerdown.stop.prevent="beginDrag($event, selectedId, handle.operation)"
                 />
               </template>
@@ -722,7 +722,7 @@ button {
 .resize-handle {
   fill: white;
   stroke: #c75000;
-  stroke-width: 2;
+  stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
