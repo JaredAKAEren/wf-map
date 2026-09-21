@@ -560,7 +560,12 @@ test("搜索条与列表围绕搜索图标收拢，列表宽度保持稳定", as
   await page.goto("/");
   await searchFor(page, "A34");
   const panel = page.locator(".search-panel");
+  const resultList = page.locator(".search-result-list");
+  const firstResult = searchResults(page).getByRole("option").first();
   await expect(searchResults(page)).toBeVisible();
+  await expect(resultList).toHaveCSS("list-style-type", "none");
+  await expect(resultList).toHaveCSS("padding-left", "0px");
+  await expect(firstResult).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   const initialWidth = await panel.evaluate((element) => {
     return element.clientWidth;
   });
@@ -585,6 +590,38 @@ test("搜索条与列表围绕搜索图标收拢，列表宽度保持稳定", as
   expect(closing.transform).not.toBe("none");
   await expect(panel).toHaveCount(0);
   await expect(page.getByRole("button", { name: "搜索展商或展位", exact: true })).toBeFocused();
+});
+
+test("搜索结果使用图标并在可滚动边缘渐隐", async ({ page }) => {
+  await page.goto("/");
+  await searchFor(page, "海");
+  const resultList = page.locator(".search-result-list");
+  const firstResult = searchResults(page).getByRole("option").first();
+
+  await expect(firstResult.locator("svg.result-arrow")).toBeVisible();
+  await expect(resultList).toHaveClass(/has-overflow-below/);
+  await expect(resultList).not.toHaveClass(/has-overflow-above/);
+  await expect
+    .poll(async () => {
+      return resultList.evaluate((element) => {
+        return getComputedStyle(element).maskImage;
+      });
+    })
+    .not.toBe("none");
+
+  await resultList.evaluate((element) => {
+    element.scrollTop = (element.scrollHeight - element.clientHeight) / 2;
+    element.dispatchEvent(new Event("scroll"));
+  });
+  await expect(resultList).toHaveClass(/has-overflow-above/);
+  await expect(resultList).toHaveClass(/has-overflow-below/);
+
+  await resultList.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event("scroll"));
+  });
+  await expect(resultList).toHaveClass(/has-overflow-above/);
+  await expect(resultList).not.toHaveClass(/has-overflow-below/);
 });
 
 test("清除搜索内容后输入框保持聚焦", async ({ page }) => {

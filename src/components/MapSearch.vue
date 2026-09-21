@@ -6,7 +6,7 @@ import {
   ComboboxRoot,
   ComboboxViewport,
 } from "reka-ui";
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import { booths, type Booth, type Hall } from "../data/exhibition";
 import { searchBooths, type BoothSearchResult } from "../domain/map";
@@ -16,8 +16,11 @@ const props = defineProps<{ preferredHall?: Hall }>();
 const emit = defineEmits<{ select: [booth: Booth]; open: [value: boolean] }>();
 const opened = ref(false);
 const input = ref<{ $el: HTMLInputElement }>();
+const resultViewport = ref<{ $el: HTMLElement }>();
 const trigger = ref<HTMLButtonElement>();
 const query = ref("");
+const hasHiddenResultsAbove = ref(false);
+const hasHiddenResultsBelow = ref(false);
 const results = computed(() => {
   return searchBooths(query.value, booths, props.preferredHall);
 });
@@ -83,6 +86,21 @@ function resultKey(result: BoothSearchResult) {
   return `${result.booth.id}/${result.entry?.slot ?? (result.entry ? "entry" : "region")}`;
 }
 
+function updateResultFades(event?: Event) {
+  const eventTarget = event?.currentTarget as HTMLElement | null;
+  const element = eventTarget ?? resultViewport.value?.$el;
+  if (!element) {
+    hasHiddenResultsAbove.value = false;
+    hasHiddenResultsBelow.value = false;
+
+    return;
+  }
+
+  const maxScrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
+  hasHiddenResultsAbove.value = element.scrollTop > 1;
+  hasHiddenResultsBelow.value = maxScrollTop - element.scrollTop > 1;
+}
+
 function choose(result: BoothSearchResult) {
   emit("select", result.booth);
   void close();
@@ -93,6 +111,13 @@ function handleComboboxOpen(value: boolean) {
     void close();
   }
 }
+
+watch([opened, results], async () => {
+  await nextTick();
+  requestAnimationFrame(() => {
+    updateResultFades();
+  });
+});
 
 defineExpose({ close });
 </script>
@@ -160,20 +185,29 @@ defineExpose({ close });
             </p>
             <template v-else>
               <p class="ui-muted" role="status">{{ results.length }} 个匹配展位</p>
-              <ComboboxViewport as="ul">
-                <li v-for="item in results" :key="resultKey(item)">
-                  <ComboboxItem
-                    as="button"
-                    type="button"
-                    :value="item"
-                    :text-value="resultTextValue(item)"
-                    @select="choose(item)"
-                  >
-                    <b>{{ item.booth.hall }} · {{ resultCode(item) }}</b>
-                    <span>{{ resultSummary(item) }}</span>
-                    <span class="result-arrow" aria-hidden="true">›</span>
-                  </ComboboxItem>
-                </li>
+              <ComboboxViewport ref="resultViewport" as-child>
+                <ul
+                  class="search-result-list"
+                  :class="{
+                    'has-overflow-above': hasHiddenResultsAbove,
+                    'has-overflow-below': hasHiddenResultsBelow,
+                  }"
+                  @scroll="updateResultFades"
+                >
+                  <li v-for="item in results" :key="resultKey(item)">
+                    <ComboboxItem
+                      as="button"
+                      type="button"
+                      :value="item"
+                      :text-value="resultTextValue(item)"
+                      @select="choose(item)"
+                    >
+                      <b>{{ item.booth.hall }} · {{ resultCode(item) }}</b>
+                      <span>{{ resultSummary(item) }}</span>
+                      <AppIcon class="result-arrow" name="chevron" />
+                    </ComboboxItem>
+                  </li>
+                </ul>
               </ComboboxViewport>
             </template>
           </ComboboxContent>
@@ -278,10 +312,40 @@ defineExpose({ close });
   padding: 16px;
 }
 
-.search-results ul {
+.search-result-list {
+  --search-result-mask: none;
+
   margin: 8px 0 0;
   padding: 0;
   list-style: none;
+
+  /* Chromium 111 需要前缀才能渲染遮罩渐变。 */
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-mask-image: var(--search-result-mask);
+  mask-image: var(--search-result-mask);
+}
+
+.search-result-list.has-overflow-below {
+  --search-result-mask: linear-gradient(
+    to bottom,
+    #000 0,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+}
+
+.search-result-list.has-overflow-above:not(.has-overflow-below) {
+  --search-result-mask: linear-gradient(to bottom, transparent 0, #000 24px, #000 100%);
+}
+
+.search-result-list.has-overflow-above.has-overflow-below {
+  --search-result-mask: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
 }
 
 .search-results li + li {
@@ -295,10 +359,6 @@ defineExpose({ close });
   text-align: left;
   background: transparent;
   padding: 12px 24px 12px 0;
-}
-
-.search-results li button[data-highlighted] {
-  background: var(--color-accent-soft);
 }
 
 .search-results b {
@@ -317,7 +377,10 @@ defineExpose({ close });
 .search-results .result-arrow {
   position: absolute;
   right: 0;
-  top: 16px;
-  font-size: 22px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  translate: 0 -50%;
+  rotate: 90deg;
 }
 </style>
