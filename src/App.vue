@@ -39,19 +39,6 @@ function boothAt(point: Point) {
   });
 }
 
-function dismissAt(point: Point) {
-  if (boothAt(point)) {
-    return false;
-  }
-
-  const dismissed = searchOpen.value || Boolean(selectedId.value);
-  void search.value?.close(false);
-  selectedId.value = "";
-  notice.value = "";
-
-  return dismissed;
-}
-
 function selectAt(point: Point) {
   const booth = boothAt(point);
   void search.value?.close(false);
@@ -60,7 +47,6 @@ function selectAt(point: Point) {
 }
 
 const { view, viewBox, moveTo, zoom, down, move, up, cancel, wheel } = useMapViewport(map, {
-  onTap: dismissAt,
   onSelect: selectAt,
 });
 

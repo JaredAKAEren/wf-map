@@ -5,9 +5,9 @@ import type { BoothConfig } from "./types";
 export const w1: BoothConfig[] = [
   {
     code: "H6",
-    x: 162,
+    x: 161,
     y: 269,
-    width: 83,
+    width: 84,
     height: 76,
     entries: personalEntries([
       "原型启动",
@@ -46,10 +46,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "A6",
-    x: 413,
+    x: 412,
     y: 269,
-    width: 82,
-    height: 75,
+    width: 84,
+    height: 76,
     entries: personalEntries([
       "纸质行旅",
       "迷因工艺室",
@@ -64,9 +64,9 @@ export const w1: BoothConfig[] = [
   {
     code: "A1",
     x: 537,
-    y: 270,
-    width: 82,
-    height: 75,
+    y: 269,
+    width: 84,
+    height: 77,
     entries: personalEntries([
       "Salt的展位",
       "",
@@ -82,9 +82,9 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "H5",
-    x: 163,
+    x: 162,
     y: 392,
-    width: 80,
+    width: 82,
     height: 42,
     entries: personalEntries([
       "freewillstudio",
@@ -123,17 +123,17 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "A5",
-    x: 413,
+    x: 412,
     y: 392,
-    width: 82,
+    width: 84,
     height: 41,
     entries: personalEntries(["模玩", "", "柚子叉", "粉匠"]),
   },
   {
     code: "A2",
-    x: 539,
+    x: 537,
     y: 392,
-    width: 81,
+    width: 84,
     height: 41,
     entries: personalEntries([
       "银龙工坊",
@@ -151,10 +151,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "H4",
-    x: 163,
-    y: 480,
-    width: 80,
-    height: 41,
+    x: 162,
+    y: 479,
+    width: 82,
+    height: 42,
     entries: personalEntries([
       "六扇门",
       "奇力玩具屋",
@@ -170,7 +170,7 @@ export const w1: BoothConfig[] = [
     x: 288,
     y: 480,
     width: 82,
-    height: 40,
+    height: 41,
     entries: personalEntries([
       "猫老爷工作室",
       "悬疑对鱼域设计研究所",
@@ -190,7 +190,7 @@ export const w1: BoothConfig[] = [
     x: 413,
     y: 480,
     width: 82,
-    height: 39,
+    height: 40,
     entries: personalEntries([
       "MF6寸玩具工作室",
       "",
@@ -211,18 +211,18 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "A3",
-    x: 539,
-    y: 481,
-    width: 81,
-    height: 39,
+    x: 537,
+    y: 480,
+    width: 84,
+    height: 41,
     entries: personalEntries(["天格制造", "", "MusicBOX", "自动约饭人偶", "StratoStudio"]),
   },
   {
     code: "H7",
     x: 96,
-    y: 286,
+    y: 285,
     width: 24,
-    height: 211,
+    height: 214,
     entries: personalEntries([
       "半拉手艺人",
       "Dream Gallery",
@@ -237,9 +237,9 @@ export const w1: BoothConfig[] = [
   {
     code: "A7",
     x: 662,
-    y: 286,
+    y: 285,
     width: 24,
-    height: 213,
+    height: 215,
     entries: personalEntries([
       "水口铸模型",
       "小鸟模型",
@@ -255,10 +255,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "G6",
-    x: 163,
-    y: 586,
-    width: 80,
-    height: 40,
+    x: 162,
+    y: 585,
+    width: 82,
+    height: 41,
     entries: personalEntries([
       "鬼斧玩具",
       "风模玩 Wind Toys",
@@ -276,10 +276,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "G1",
-    x: 288,
+    x: 287,
     y: 584,
-    width: 82,
-    height: 41,
+    width: 84,
+    height: 42,
     entries: personalEntries([
       "欧映工作室OUYINGSTUDIO",
       "破碎的童话",
@@ -298,7 +298,7 @@ export const w1: BoothConfig[] = [
     x: 413,
     y: 585,
     width: 82,
-    height: 41,
+    height: 42,
     entries: personalEntries([
       "dodowo",
       "HOTRU STUDIO",
@@ -320,10 +320,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "B1",
-    x: 539,
+    x: 538,
     y: 585,
-    width: 81,
-    height: 41,
+    width: 83,
+    height: 42,
     entries: personalEntries([
       "万控卡FCS",
       "怪力乱流",
@@ -342,9 +342,9 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "G5",
-    x: 163,
+    x: 162,
     y: 672,
-    width: 79,
+    width: 83,
     height: 40,
     entries: personalEntries([
       "POWERSPOTOV",
@@ -365,10 +365,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "G2",
-    x: 288,
-    y: 673,
-    width: 82,
-    height: 38,
+    x: 287,
+    y: 672,
+    width: 84,
+    height: 40,
     entries: personalEntries([
       "六月腓一栗冻鱼",
       "轮回",
@@ -381,10 +381,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "B5",
-    x: 413,
+    x: 412,
     y: 671,
-    width: 83,
-    height: 41,
+    width: 84,
+    height: 42,
     entries: personalEntries([
       "RadioRat电台老板",
       "Sensation Studio",
@@ -407,10 +407,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "B2",
-    x: 539,
+    x: 537,
     y: 672,
-    width: 81,
-    height: 39,
+    width: 84,
+    height: 40,
     entries: personalEntries([
       "",
       "大怪物物园",
@@ -422,10 +422,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "G4",
-    x: 163,
-    y: 759,
-    width: 81,
-    height: 39,
+    x: 162,
+    y: 758,
+    width: 83,
+    height: 41,
     entries: personalEntries([
       "BorisPing Toys",
       "DROWING STUDIO",
@@ -443,10 +443,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "G3",
-    x: 288,
+    x: 287,
     y: 758,
-    width: 82,
-    height: 40,
+    width: 83,
+    height: 41,
     entries: personalEntries([
       "鐵牛 IRONBULL",
       "太阳鸟",
@@ -465,7 +465,7 @@ export const w1: BoothConfig[] = [
     x: 412,
     y: 758,
     width: 84,
-    height: 40,
+    height: 41,
     entries: personalEntries([
       "",
       "悟空印象",
@@ -485,10 +485,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "B3",
-    x: 539,
-    y: 759,
-    width: 81,
-    height: 40,
+    x: 537,
+    y: 758,
+    width: 84,
+    height: 41,
     entries: personalEntries([
       "ZZZ-X MONSTER",
       "贝吉旺",
@@ -504,9 +504,9 @@ export const w1: BoothConfig[] = [
   {
     code: "G7",
     x: 96,
-    y: 589,
+    y: 588,
     width: 24,
-    height: 212,
+    height: 214,
     entries: personalEntries([
       "童山ART",
       "奥特曼墓场",
@@ -524,17 +524,17 @@ export const w1: BoothConfig[] = [
   {
     code: "B7",
     x: 662,
-    y: 587,
+    y: 586,
     width: 24,
-    height: 213,
+    height: 215,
     entries: personalEntries(["奇形堂", "莫屋", "散物集", "双岛", "", "太乙TOYSCOMIC"]),
   },
   {
     code: "F6",
-    x: 163,
-    y: 859,
-    width: 79,
-    height: 40,
+    x: 162,
+    y: 858,
+    width: 83,
+    height: 41,
     entries: personalEntries([
       "ADAM",
       "Give me 5ive",
@@ -554,8 +554,8 @@ export const w1: BoothConfig[] = [
     code: "F1",
     x: 287,
     y: 858,
-    width: 83,
-    height: 40,
+    width: 84,
+    height: 41,
     entries: personalEntries([
       "AceFigz",
       "A社",
@@ -570,10 +570,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "C6",
-    x: 413,
-    y: 860,
-    width: 82,
-    height: 39,
+    x: 412,
+    y: 858,
+    width: 84,
+    height: 41,
     entries: personalEntries([
       "",
       "Animeone",
@@ -591,10 +591,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "C1",
-    x: 539,
+    x: 538,
     y: 858,
-    width: 81,
-    height: 40,
+    width: 83,
+    height: 41,
     entries: personalEntries([
       "黑莲工作室",
       "沧溪工作室",
@@ -611,10 +611,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "F5",
-    x: 163,
-    y: 945,
-    width: 81,
-    height: 40,
+    x: 162,
+    y: 944,
+    width: 82,
+    height: 41,
     entries: personalEntries([
       "HomieToys",
       "wulala",
@@ -630,9 +630,9 @@ export const w1: BoothConfig[] = [
   {
     code: "F2",
     x: 287,
-    y: 945,
+    y: 944,
     width: 83,
-    height: 40,
+    height: 41,
     entries: personalEntries([
       "冯阳昆",
       "秦昊亮原型工作室",
@@ -647,9 +647,9 @@ export const w1: BoothConfig[] = [
   {
     code: "C5",
     x: 413,
-    y: 945,
+    y: 944,
     width: 82,
-    height: 40,
+    height: 41,
     entries: personalEntries([
       "阿画的小摊",
       "露露喵工作室",
@@ -668,10 +668,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "C2",
-    x: 539,
-    y: 945,
-    width: 81,
-    height: 40,
+    x: 538,
+    y: 944,
+    width: 82,
+    height: 41,
     entries: personalEntries([
       "涂鸦十号—泽荟",
       "涂装动物园",
@@ -688,9 +688,9 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "F4",
-    x: 163,
+    x: 162,
     y: 1031,
-    width: 80,
+    width: 82,
     height: 41,
     entries: personalEntries([
       "阿峰山人",
@@ -705,9 +705,9 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "F3",
-    x: 288,
+    x: 287,
     y: 1031,
-    width: 82,
+    width: 83,
     height: 41,
     entries: personalEntries([
       "野鹤",
@@ -749,10 +749,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "C3",
-    x: 539,
+    x: 538,
     y: 1031,
-    width: 81,
-    height: 40,
+    width: 82,
+    height: 41,
     entries: personalEntries([
       "",
       "石头左手",
@@ -767,9 +767,9 @@ export const w1: BoothConfig[] = [
   {
     code: "F7",
     x: 96,
-    y: 865,
+    y: 864,
     width: 24,
-    height: 212,
+    height: 214,
     entries: personalEntries(["grey knight", "AXYTOYS", "鱼Toys", "", "FYJ-STUDIO", "十二点"]),
   },
   {
@@ -777,7 +777,7 @@ export const w1: BoothConfig[] = [
     x: 662,
     y: 864,
     width: 24,
-    height: 213,
+    height: 214,
     entries: personalEntries([
       "FANKIT",
       "FIROWIO",
@@ -795,10 +795,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "E6",
-    x: 161,
-    y: 1132,
-    width: 82,
-    height: 76,
+    x: 160,
+    y: 1131,
+    width: 83,
+    height: 77,
     entries: personalEntries([
       "遗物之心",
       "TinyFox小狐",
@@ -819,7 +819,7 @@ export const w1: BoothConfig[] = [
     x: 287,
     y: 1132,
     width: 83,
-    height: 74,
+    height: 75,
     entries: personalEntries([
       "夷博灵宠CyberPet",
       "十万火吉",
@@ -836,9 +836,9 @@ export const w1: BoothConfig[] = [
   {
     code: "D6",
     x: 412,
-    y: 1133,
+    y: 1132,
     width: 84,
-    height: 75,
+    height: 76,
     entries: personalEntries([
       "小辉儿3D",
       "",
@@ -860,9 +860,9 @@ export const w1: BoothConfig[] = [
   {
     code: "D1",
     x: 538,
-    y: 1133,
+    y: 1132,
     width: 82,
-    height: 75,
+    height: 76,
     entries: personalEntries([
       "MojingToys模型工作室",
       "未遂手作",
@@ -880,9 +880,9 @@ export const w1: BoothConfig[] = [
   {
     code: "E5",
     x: 162,
-    y: 1254,
+    y: 1253,
     width: 83,
-    height: 40,
+    height: 41,
     entries: personalEntries([
       "APHID STUDIO",
       "Brain Juice",
@@ -900,9 +900,9 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "E2",
-    x: 288,
+    x: 287,
     y: 1254,
-    width: 82,
+    width: 83,
     height: 40,
     entries: personalEntries([
       "湿象模型工作室",
@@ -916,10 +916,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "D5",
-    x: 413,
-    y: 1255,
-    width: 82,
-    height: 39,
+    x: 412,
+    y: 1254,
+    width: 83,
+    height: 40,
     entries: personalEntries([
       "",
       "星辰回忆",
@@ -931,10 +931,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "D2",
-    x: 539,
-    y: 1255,
-    width: 81,
-    height: 40,
+    x: 538,
+    y: 1254,
+    width: 83,
+    height: 41,
     entries: personalEntries([
       "布可岛",
       "原力智造",
@@ -952,10 +952,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "E4",
-    x: 162,
-    y: 1340,
-    width: 82,
-    height: 40,
+    x: 161,
+    y: 1339,
+    width: 84,
+    height: 42,
     entries: personalEntries([
       "天天头不大",
       "曼莹工作室",
@@ -975,10 +975,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "E3",
-    x: 288,
-    y: 1341,
-    width: 82,
-    height: 38,
+    x: 287,
+    y: 1340,
+    width: 84,
+    height: 40,
     entries: personalEntries([
       "",
       "动物星云",
@@ -992,10 +992,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "D4",
-    x: 415,
-    y: 1341,
-    width: 81,
-    height: 37,
+    x: 412,
+    y: 1340,
+    width: 84,
+    height: 41,
     entries: personalEntries([
       "白血工坊",
       "炽星工坊Blazing Galaxy Studio",
@@ -1012,9 +1012,9 @@ export const w1: BoothConfig[] = [
   {
     code: "D3",
     x: 538,
-    y: 1341,
+    y: 1340,
     width: 82,
-    height: 40,
+    height: 41,
     entries: personalEntries([
       "GOE YON霜云工作室",
       "遗物志&zoe手作",
@@ -1029,24 +1029,24 @@ export const w1: BoothConfig[] = [
   {
     code: "E7",
     x: 96,
-    y: 1155,
+    y: 1153,
     width: 24,
-    height: 210,
+    height: 214,
     entries: personalEntries(["团子星人", "", "铿铿匠造", "无限模型OTAKU ZONE"]),
   },
   {
     code: "D7",
     x: 662,
-    y: 1150,
+    y: 1148,
     width: 24,
-    height: 212,
+    height: 214,
     entries: personalEntries(["", "有布", "北京八脚工作室", "言己造物", "一川艺木", "BinJie.Lee"]),
   },
   {
     code: "E8",
-    x: 161,
+    x: 159,
     y: 1427,
-    width: 213,
+    width: 216,
     height: 26,
     entries: personalEntries([
       "YADOL MICOL",
@@ -1066,10 +1066,10 @@ export const w1: BoothConfig[] = [
   },
   {
     code: "D8",
-    x: 410,
+    x: 409,
     y: 1427,
-    width: 106,
-    height: 25,
+    width: 216,
+    height: 26,
     entries: personalEntries([
       "the wall",
       "",

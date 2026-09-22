@@ -462,16 +462,7 @@ onMounted(() => {
                   {{ booth.code }}
                 </text>
               </g>
-              <template v-if="selectedBounds && originalBounds">
-                <rect
-                  v-if="!sameBounds(selectedBounds, originalBounds)"
-                  class="original-boundary"
-                  :x="originalBounds.x"
-                  :y="originalBounds.y"
-                  :width="originalBounds.width"
-                  :height="originalBounds.height"
-                  rx="8"
-                />
+              <template v-if="selectedBounds">
                 <rect
                   v-for="handle in handleDefinitions"
                   :key="handle.operation"
@@ -708,15 +699,6 @@ button {
   stroke: white;
   stroke-width: 3px;
   stroke-linejoin: round;
-}
-
-.original-boundary {
-  pointer-events: none;
-  fill: none;
-  stroke: #5b5147;
-  stroke-dasharray: 5 4;
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
 }
 
 .resize-handle {
