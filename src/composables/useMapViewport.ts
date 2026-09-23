@@ -5,13 +5,14 @@ import { screenToWorld, zoomView, type Point, type View } from "../domain/viewpo
 const pointOf = (event: PointerEvent | WheelEvent) => {
   return { x: event.clientX, y: event.clientY };
 };
+const doubleTapInterval = 200;
 
 // 手势直接跟手；离散操作使用可打断的相机动画，共用同一个 SVG 坐标系。
 export function useMapViewport(
   map: Ref<SVGSVGElement | undefined>,
-  callbacks: { onSelect: (point: Point) => void; onTap?: (point: Point) => boolean | void },
+  callbacks: { onSelect: (point: Point) => void },
 ) {
-  const view = ref<View>({ x: 3490, y: 170, width: 690, height: 1240 });
+  const view = ref<View>({ x: 50, y: 170, width: 690, height: 1240 });
   const viewBox = computed(() => {
     return `${view.value.x} ${view.value.y} ${view.value.width} ${view.value.height}`;
   });
@@ -92,7 +93,7 @@ export function useMapViewport(
     start = point;
     if (
       lastTap &&
-      performance.now() - lastTap.time < 300 &&
+      performance.now() - lastTap.time < doubleTapInterval &&
       Math.hypot(point.x - lastTap.x, point.y - lastTap.y) < 28
     ) {
       cancelTap();
@@ -151,15 +152,12 @@ export function useMapViewport(
       doubleDrag = undefined;
     } else if (!dragged && !multiTouch && pointers.size === 1) {
       const selection = world(point);
-      const handled = callbacks.onTap?.(selection) === true;
-      if (!handled) {
-        lastTap = { ...point, time: performance.now() };
-        tapTimer = setTimeout(() => {
-          callbacks.onSelect(selection);
-          lastTap = undefined;
-          tapTimer = undefined;
-        }, 300);
-      }
+      lastTap = { ...point, time: performance.now() };
+      tapTimer = setTimeout(() => {
+        callbacks.onSelect(selection);
+        lastTap = undefined;
+        tapTimer = undefined;
+      }, doubleTapInterval);
     }
     pointers.delete(event.pointerId);
   }

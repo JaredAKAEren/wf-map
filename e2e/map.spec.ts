@@ -107,6 +107,19 @@ test("缺少 Array.toSorted 时仍能搜索并定位展位", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "A28", exact: true })).toBeVisible();
 });
 
+test("细分编号可搜索并定位所属主分区，空名记录显示待补充", async ({ page }) => {
+  await page.goto("/");
+  await searchFor(page, "W1-A1-06");
+
+  const result = searchResult(page, /W1 · A1-06/);
+  await expect(result).toBeVisible();
+  await result.click();
+  await expect(page.getByRole("heading", { name: "A1", exact: true })).toBeVisible();
+
+  await searchFor(page, "W1-B4-03");
+  await expect(searchResult(page, /W1 · B4-03.*名称待补充/)).toBeVisible();
+});
+
 test("搜索列表先选后跳转，展位查看状态可恢复", async ({ page }) => {
   await page.goto("/");
   const initial = await viewOf(page);
@@ -123,7 +136,7 @@ test("搜索列表先选后跳转，展位查看状态可恢复", async ({ page 
       return (await viewOf(page))[2];
     })
     .toBe(700);
-  const point = await mapPoint(page, 3440 + 330, 285);
+  const point = await mapPoint(page, 330, 285);
   await page.mouse.click(point.x, point.y);
   await expect(page.getByRole("heading", { name: "A26", exact: true })).toBeVisible();
   await expect
@@ -135,7 +148,7 @@ test("搜索列表先选后跳转，展位查看状态可恢复", async ({ page 
     .toMatchObject({ selectedId: "wf2026/W5/A26", hall: "W5" });
   await expect(page.getByRole("button", { name: "我在这里", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "设为目标", exact: true })).toHaveCount(0);
-  await searchFor(page, "A34");
+  await searchFor(page, "W5A34");
   await searchResult(page, /A34/).click();
   await page.reload();
   await expect(page.getByRole("heading", { name: "A34", exact: true })).toBeVisible();
@@ -182,7 +195,7 @@ test("搜索复用 Combobox 的按键选择、关闭和中文输入保护", asyn
 test("照片改绑逐张确认，取消、确认与异常都保留原关联边界", async ({ page }) => {
   await mockNativePhotos(page);
   await page.goto("/");
-  await searchFor(page, "A34");
+  await searchFor(page, "W5A34");
   await searchResult(page, /A34/).click();
   await page.getByRole("button", { name: "展开贴图" }).click();
   const associate = page.getByRole("button", { name: "添加贴图" });
@@ -242,20 +255,21 @@ test("照片改绑逐张确认，取消、确认与异常都保留原关联边�
 
 test("切馆及缩放有中间帧，双击与双击拖动不误选展位", async ({ page }) => {
   await page.goto("/");
+  expect((await viewOf(page))[0]).toBe(50);
   await page.getByRole("button", { name: "W1", exact: true }).click();
   await expect
     .poll(async () => {
       return (await viewOf(page))[0];
     })
-    .toBe(50);
+    .toBe(3490);
   await page.getByRole("button", { name: "W5", exact: true }).click();
   const during = (await viewOf(page))[0]!;
-  expect(during).toBeLessThan(3490);
+  expect(during).toBeGreaterThan(50);
   await expect
     .poll(async () => {
       return (await viewOf(page))[0];
     })
-    .toBe(3490);
+    .toBe(50);
   const width = (await viewOf(page))[2]!;
   await page.mouse.dblclick(180, 400, { delay: 90 });
   await expect
@@ -297,11 +311,11 @@ test("减少动态效果直接到位，旧位置记录清理，照片能力和�
   });
   await page.goto("/");
   await page.getByRole("button", { name: "W1", exact: true }).click();
-  expect((await viewOf(page))[0]).toBe(50);
+  expect((await viewOf(page))[0]).toBe(3490);
   for (const hall of ["W1", "W2", "W3", "W4", "W5"]) {
     expect((await page.request.get(`/maps/${hall}.png`)).ok()).toBe(true);
   }
-  await searchFor(page, "A28");
+  await searchFor(page, "W5A28");
   await searchResult(page, /A28/).click();
   await page.getByRole("button", { name: "展开贴图" }).click();
   await expect(page.getByRole("button", { name: "添加贴图" })).toBeDisabled();
@@ -369,7 +383,7 @@ test("图标按钮的图形位于按钮正中心", async ({ page }) => {
 
 test("点地图空白处关闭搜索与详情，拖动地图不误关闭", async ({ page }) => {
   await page.goto("/");
-  await searchFor(page, "A34");
+  await searchFor(page, "W5A34");
   await searchResult(page, /A34/).click();
   await expect(page.getByRole("dialog", { name: "展位详情" })).toBeVisible();
   await page.mouse.move(10, 450);
@@ -380,12 +394,12 @@ test("点地图空白处关闭搜索与详情，拖动地图不误关闭", async
   // A34 聚焦后 x=10 的地图边缘为展位外空白。
   const sheet = page.getByRole("dialog", { name: "展位详情" });
   await page.mouse.click(10, 450);
-  await expect(sheet).toHaveAttribute("data-state", "closed", { timeout: 100 });
+  await expect(sheet).toHaveAttribute("data-state", "closed");
   await expect(sheet).toHaveCount(0);
   await searchFor(page, "A28");
   const searchPanel = page.locator(".search-panel");
   await page.mouse.click(10, 450);
-  await expect(searchPanel).toHaveClass(/search-expand-leave-active/, { timeout: 100 });
+  await expect(searchPanel).toHaveCount(0);
   await expect(searchResults(page)).toHaveCount(0);
   await expect(page.getByRole("combobox")).toHaveCount(0);
 });
@@ -393,7 +407,7 @@ test("点地图空白处关闭搜索与详情，拖动地图不误关闭", async
 test("详情仅从把手或标题上拉展开，展开后下拉关闭", async ({ page }) => {
   await page.setViewportSize({ width: 868, height: 456 });
   await page.goto("/");
-  await searchFor(page, "A34");
+  await searchFor(page, "W5A34");
   await searchResult(page, /A34/).click();
   const handle = page.locator(".sheet-handle");
   const toggle = page.getByRole("button", { name: "展开贴图" });
@@ -514,7 +528,7 @@ test("详情仅从把手或标题上拉展开，展开后下拉关闭", async ({
 
 test("贴图收起后的下拉关闭匹配距离、速度和反向取消规则", async ({ page }) => {
   await page.goto("/");
-  await searchFor(page, "A34");
+  await searchFor(page, "W5A34");
   await searchResult(page, /A34/).click();
   await page.getByRole("button", { name: "展开贴图" }).click();
   await page.getByRole("button", { name: "收起贴图" }).click();
@@ -560,7 +574,12 @@ test("搜索条与列表围绕搜索图标收拢，列表宽度保持稳定", as
   await page.goto("/");
   await searchFor(page, "A34");
   const panel = page.locator(".search-panel");
+  const resultList = page.locator(".search-result-list");
+  const firstResult = searchResults(page).getByRole("option").first();
   await expect(searchResults(page)).toBeVisible();
+  await expect(resultList).toHaveCSS("list-style-type", "none");
+  await expect(resultList).toHaveCSS("padding-left", "0px");
+  await expect(firstResult).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   const initialWidth = await panel.evaluate((element) => {
     return element.clientWidth;
   });
@@ -585,6 +604,38 @@ test("搜索条与列表围绕搜索图标收拢，列表宽度保持稳定", as
   expect(closing.transform).not.toBe("none");
   await expect(panel).toHaveCount(0);
   await expect(page.getByRole("button", { name: "搜索展商或展位", exact: true })).toBeFocused();
+});
+
+test("搜索结果使用图标并在可滚动边缘渐隐", async ({ page }) => {
+  await page.goto("/");
+  await searchFor(page, "海");
+  const resultList = page.locator(".search-result-list");
+  const firstResult = searchResults(page).getByRole("option").first();
+
+  await expect(firstResult.locator("svg.result-arrow")).toBeVisible();
+  await expect(resultList).toHaveClass(/has-overflow-below/);
+  await expect(resultList).not.toHaveClass(/has-overflow-above/);
+  await expect
+    .poll(async () => {
+      return resultList.evaluate((element) => {
+        return getComputedStyle(element).maskImage;
+      });
+    })
+    .not.toBe("none");
+
+  await resultList.evaluate((element) => {
+    element.scrollTop = (element.scrollHeight - element.clientHeight) / 2;
+    element.dispatchEvent(new Event("scroll"));
+  });
+  await expect(resultList).toHaveClass(/has-overflow-above/);
+  await expect(resultList).toHaveClass(/has-overflow-below/);
+
+  await resultList.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event("scroll"));
+  });
+  await expect(resultList).toHaveClass(/has-overflow-above/);
+  await expect(resultList).not.toHaveClass(/has-overflow-below/);
 });
 
 test("清除搜索内容后输入框保持聚焦", async ({ page }) => {

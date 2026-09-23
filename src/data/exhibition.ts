@@ -1,315 +1,36 @@
-export interface Booth {
-  id: string;
-  hall: string;
-  code: string;
-  names: string[];
-  searchTerms: string[];
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+import type { Booth, BoothConfig, Hall } from "./exhibition/types";
+import { halls } from "./exhibition/types";
+import { w1 } from "./exhibition/w1";
+import { w2 } from "./exhibition/w2";
+import { w3 } from "./exhibition/w3";
+import { w4 } from "./exhibition/w4";
+import { w5 } from "./exhibition/w5";
 
-interface BoothConfig {
-  code: string;
-  names: string[];
-  searchTerms?: string[];
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+export { halls };
+export { isHall } from "./exhibition/types";
+export type { Booth, BoothEntry, Hall } from "./exhibition/types";
 
-export const halls = ["W1", "W2", "W3", "W4", "W5"];
 export const imageSize = { width: 800, height: 1500 };
 
-// W5：坐标依据固定底图（800 × 1480）逐项标注；其他馆尚未录入。
-const w5: BoothConfig[] = [
-  {
-    code: "A01",
-    x: 536,
-    y: 236,
-    width: 124,
-    height: 143,
-    names: ["52TOYS", "猛兽匣BEASTBOX"],
-    searchTerms: ["BEASTBOX", "meng shou xia", "msx"],
-  },
-  { code: "A03", x: 581, y: 435, width: 80, height: 79, names: ["Ali2E"] },
-  {
-    code: "A04",
-    x: 544,
-    y: 544,
-    width: 116,
-    height: 106,
-    names: ["塑唐玩具SOOTANG TOY"],
-    searchTerms: ["SOOTANG TOY", "su tang wan ju", "stwj"],
-  },
-  {
-    code: "A05",
-    x: 572,
-    y: 657,
-    width: 89,
-    height: 82,
-    names: ["青岛社AOSHIMA", "FLYHAWK 鹰翔模型"],
-    searchTerms: ["AOSHIMA", "qing dao she", "qds", "FLYHAWK", "ying xiang mo xing", "yxmx"],
-  },
-  { code: "A06", x: 581, y: 746, width: 80, height: 85, names: ["MEDICOS", "RE-MENT"] },
-  { code: "A07", x: 555, y: 865, width: 106, height: 82, names: ["MAGI ARTS"] },
-  { code: "A09", x: 544, y: 1010, width: 117, height: 97, names: ["furyu"] },
-  {
-    code: "A10",
-    x: 535,
-    y: 1135,
-    width: 126,
-    height: 92,
-    names: ["COME4FREE", "NiyruLoi", "Bonnie", "Minty"],
-  },
-  {
-    code: "A12",
-    x: 536,
-    y: 1238,
-    width: 125,
-    height: 135,
-    names: ["bilibili会员购"],
-    searchTerms: ["bilibili", "hui yuan gou", "hyg"],
-  },
-  {
-    code: "A13",
-    x: 405,
-    y: 1238,
-    width: 116,
-    height: 135,
-    names: ["oh!漏!专区"],
-    searchTerms: ["lou zhuan qu", "lzq"],
-  },
-  {
-    code: "A15",
-    x: 405,
-    y: 1135,
-    width: 80,
-    height: 92,
-    names: ["SKCTOY寺酷潮玩"],
-    searchTerms: ["SKCTOY", "si ku chao wan", "skcw"],
-  },
-  {
-    code: "A16",
-    x: 405,
-    y: 1037,
-    width: 90,
-    height: 70,
-    names: ["动物星云ANIMAL"],
-    searchTerms: ["ANIMAL", "dong wu xing yun", "dwxy"],
-  },
-  { code: "A17", x: 405, y: 955, width: 84, height: 76, names: ["LADoTOYS"] },
-  {
-    code: "A18",
-    x: 405,
-    y: 864,
-    width: 120,
-    height: 84,
-    names: ["HobbySakura"],
-    searchTerms: ["HSK"],
-  },
-  {
-    code: "A19",
-    x: 405,
-    y: 746,
-    width: 80,
-    height: 85,
-    names: ["塑唐SOOTANG HOBBY"],
-    searchTerms: ["SOOTANG HOBBY", "su tang", "st"],
-  },
-  {
-    code: "A20",
-    x: 492,
-    y: 746,
-    width: 82,
-    height: 85,
-    names: ["孩之宝变形金刚TRANSFORMERS"],
-    searchTerms: ["TRANSFORMERS", "hai zhi bao bian xing jin gang", "hzbbxjg"],
-  },
-  { code: "A21", x: 405, y: 646, width: 106, height: 91, names: ["ASCENDIA", "MIRAIMIRA"] },
-  { code: "A22", x: 405, y: 544, width: 114, height: 95, names: ["MegaHouse"] },
-  {
-    code: "A23",
-    x: 405,
-    y: 368,
-    width: 127,
-    height: 146,
-    names: ["NEO EDEN TOYS", "伊甸工业", "NOVA ARTS"],
-    searchTerms: ["yi dian gong ye", "ydgy"],
-  },
-  {
-    code: "A25",
-    x: 405,
-    y: 236,
-    width: 70,
-    height: 100,
-    names: ["Hanabee", "库洛游戏KURO GAMES"],
-    searchTerms: ["KURO GAMES", "ku luo you xi", "klyx"],
-  },
-  { code: "A26", x: 277, y: 236, width: 102, height: 90, names: ["APEX-TOYS"] },
-  { code: "A27", x: 268, y: 333, width: 111, height: 74, names: ["ANIPLEX"] },
-  {
-    code: "A28",
-    x: 265,
-    y: 413,
-    width: 114,
-    height: 101,
-    names: [
-      "CAPCOM",
-      "AniGame",
-      "Reverse Studio",
-      "freyja",
-      "EUSUN",
-      "AMAKUNI",
-      "GOLDENHEAD PLUS",
-      "AliceGlint",
-      "VERTEX",
-      "Orchidseed",
-      "Phalaeno",
-      "Alphamax",
-      "Cerberus Project",
-      "VKEND",
-      "BearPanda",
-      "Raise Dream",
-      "SEXYICE",
-      "NEONMAX",
-      "amiami",
-    ],
-    searchTerms: ["卡普空"],
-  },
-  {
-    code: "A29",
-    x: 274,
-    y: 544,
-    width: 105,
-    height: 92,
-    names: ["RIBOSE核糖文化"],
-    searchTerms: ["RIBOSE", "he tang wen hua", "htwh"],
-  },
-  {
-    code: "A30",
-    x: 292,
-    y: 651,
-    width: 87,
-    height: 88,
-    names: ["蜗之壳SnailShell"],
-    searchTerms: ["SnailShell", "wo zhi ke", "wzk"],
-  },
-  {
-    code: "A31",
-    x: 292,
-    y: 745,
-    width: 87,
-    height: 86,
-    names: ["Otherwhere", "CALIBRE", "ASTRANCE"],
-  },
-  {
-    code: "A32",
-    x: 268,
-    y: 864,
-    width: 111,
-    height: 73,
-    names: ["海雅玩具HIYA"],
-    searchTerms: ["HIYA", "hai ya wan ju", "hywj"],
-  },
-  {
-    code: "A34",
-    x: 124,
-    y: 948,
-    width: 255,
-    height: 159,
-    names: ["GOOD SMILE CHINA", "小岛工作室KOJIMA PRODUCTIONS"],
-    searchTerms: ["KOJIMA PRODUCTIONS", "xiao dao gong zuo shi", "xdgzs"],
-  },
-  {
-    code: "A35",
-    x: 267,
-    y: 1135,
-    width: 112,
-    height: 85,
-    names: ["SQUARE ENIX CHINA", "TAITO"],
-    searchTerms: ["SE"],
-  },
-  {
-    code: "A37",
-    x: 124,
-    y: 1253,
-    width: 255,
-    height: 120,
-    names: ["海洋堂KAIYODO"],
-    searchTerms: ["KAIYODO", "hai yang tang", "hyt"],
-  },
-  { code: "A39", x: 124, y: 1135, width: 137, height: 87, names: ["hobbychaton", "eusun"] },
-  {
-    code: "A41",
-    x: 124,
-    y: 864,
-    width: 136,
-    height: 73,
-    names: ["HPOI手办维基", "SIKI ANIM", "Calbone"],
-    searchTerms: ["HPOI", "shou ban wei ji", "sbwj"],
-  },
-  {
-    code: "A42",
-    x: 124,
-    y: 746,
-    width: 81,
-    height: 85,
-    names: ["Funko 丰高潮玩"],
-    searchTerms: ["Funko", "feng gao chao wan", "fgcw"],
-  },
-  { code: "A43", x: 213, y: 746, width: 71, height: 85, names: ["AEGIS ART"] },
-  { code: "A44", x: 124, y: 651, width: 82, height: 88, names: ["Hyper3D"] },
-  {
-    code: "A45",
-    x: 124,
-    y: 544,
-    width: 124,
-    height: 100,
-    names: ["玩乐主义Funism"],
-    searchTerms: ["Funism", "wan le zhu yi", "wlzy"],
-  },
-  { code: "A46", x: 124, y: 425, width: 105, height: 89, names: ["Bibi Buttons", "KAWA DESIGN"] },
-  {
-    code: "A47",
-    x: 124,
-    y: 344,
-    width: 86,
-    height: 76,
-    names: ["宸玑研造"],
-    searchTerms: ["chen ji yan zao", "cjyz"],
-  },
-  {
-    code: "A48",
-    x: 124,
-    y: 236,
-    width: 124,
-    height: 102,
-    names: [
-      "Solarain",
-      "溯行SuShing",
-      "机械心跳",
-      "Solaraingoods",
-      "Honey2",
-      "时雨志",
-      "musemolds",
-    ],
-    searchTerms: ["SuShing", "su xing", "sx", "ji xie xin tiao", "jxxt", "shi yu zhi", "syz"],
-  },
-];
+const hallBooths: Record<Hall, BoothConfig[]> = {
+  W1: w1,
+  W2: w2,
+  W3: w3,
+  W4: w4,
+  W5: w5,
+};
 
-export const booths: Booth[] = w5.map(({ code, names, searchTerms = [], x, y, width, height }) => {
-  return {
-    id: `wf2026/W5/${code}`,
-    hall: "W5",
-    code,
-    names,
-    searchTerms,
-    x,
-    y,
-    width,
-    height,
-  };
+export const booths: Booth[] = halls.flatMap((hall) => {
+  return hallBooths[hall].map(({ code, entries, x, y, width, height }) => {
+    return {
+      id: `wf2026/${hall}/${code}`,
+      hall,
+      code,
+      entries,
+      x,
+      y,
+      width,
+      height,
+    };
+  });
 });

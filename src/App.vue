@@ -7,13 +7,13 @@ import MapSearch from "./components/MapSearch.vue";
 import AppIcon from "./components/ui/AppIcon.vue";
 import HallSwitcher from "./components/ui/HallSwitcher.vue";
 import { useMapViewport } from "./composables/useMapViewport";
-import { booths, halls, type Booth } from "./data/exhibition";
+import { booths, halls, isHall, type Booth, type Hall } from "./data/exhibition";
 import type { Point, View } from "./domain/viewport";
 
 const map = ref<SVGSVGElement>();
 const search = ref<InstanceType<typeof MapSearch>>();
 const selectedId = ref("");
-const hall = ref("W5");
+const hall = ref<Hall>("W5");
 const notice = ref("");
 const searchOpen = ref(false);
 const ready = ref(false);
@@ -24,7 +24,7 @@ const selected = computed(() => {
   });
 });
 
-const offset = (name: string) => {
+const offset = (name: Hall) => {
   return halls.indexOf(name) * 860;
 };
 
@@ -39,19 +39,6 @@ function boothAt(point: Point) {
   });
 }
 
-function dismissAt(point: Point) {
-  if (boothAt(point)) {
-    return false;
-  }
-
-  const dismissed = searchOpen.value || Boolean(selectedId.value);
-  void search.value?.close(false);
-  selectedId.value = "";
-  notice.value = "";
-
-  return dismissed;
-}
-
 function selectAt(point: Point) {
   const booth = boothAt(point);
   void search.value?.close(false);
@@ -60,11 +47,10 @@ function selectAt(point: Point) {
 }
 
 const { view, viewBox, moveTo, zoom, down, move, up, cancel, wheel } = useMapViewport(map, {
-  onTap: dismissAt,
   onSelect: selectAt,
 });
 
-function focusHall(name: string) {
+function focusHall(name: Hall) {
   hall.value = name;
   selectedId.value = "";
   moveTo({ x: offset(name) + 50, y: 160, width: 700, height: 1260 });
@@ -145,8 +131,7 @@ onMounted(async () => {
     if (saved.value) {
       const state = JSON.parse(saved.value) as Record<string, unknown>;
       selectedId.value = validId(state.selectedId);
-      const savedHall =
-        typeof state.hall === "string" && halls.includes(state.hall) ? state.hall : undefined;
+      const savedHall = isHall(state.hall) ? state.hall : undefined;
       if (savedHall) {
         hall.value = savedHall;
       }
@@ -203,10 +188,10 @@ onUnmounted(() => {
           <image :href="`/maps/${name}.png`" width="800" :height="name === 'W1' ? 1500 : 1480" />
           <rect
             v-if="selected?.hall === name"
-            :x="selected.x - 3"
-            :y="selected.y - 3"
-            :width="selected.width + 6"
-            :height="selected.height + 6"
+            :x="selected.x - 1"
+            :y="selected.y - 1"
+            :width="selected.width + 2"
+            :height="selected.height + 2"
             rx="10"
             class="selected-booth"
           />
@@ -351,7 +336,7 @@ onUnmounted(() => {
 .selected-booth {
   fill: var(--color-highlight);
   stroke: var(--color-primary);
-  stroke-width: 3;
+  stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
 

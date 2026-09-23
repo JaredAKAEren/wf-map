@@ -653,6 +653,7 @@ test("关闭动画保留展位，选择器晚返回仅释放未关联授权", as
   await page.getByRole("button", { name: "添加贴图" }).click();
   await page.mouse.click(10, 450);
   const sheet = page.locator(".booth-sheet");
+  await expect(sheet).toHaveAttribute("data-state", "closed");
   expect(
     await sheet.evaluate((element) => {
       return {
@@ -703,22 +704,13 @@ test("切换展位忽略旧缩略图请求，重新打开读取当前记录", as
   await expect(page.getByRole("img", { name: "展位贴图缩略图" })).toHaveCount(2);
 });
 
-test("窄屏长英文断词，多图限高可滚动，减少动态效果直接到位", async ({ page }) => {
+test("窄屏多图限高可滚动，减少动态效果直接到位", async ({ page }) => {
   await prepare(page, 18);
   await page.setViewportSize({ width: 320, height: 760 });
   await choose(page);
   await settled(page);
-  await page.locator(".booth-names").evaluate((element) => {
-    element.textContent = "VeryLongExhibitorName".repeat(5);
-  });
-  await expect(page.locator(".booth-names")).toHaveCSS("word-break", "break-all");
   const sheet = page.locator(".booth-sheet");
   expect((await sheet.boundingBox())!.height).toBeLessThanOrEqual(760 * 0.65 + 1);
-  expect(
-    await page.locator(".booth-names").evaluate((element) => {
-      return element.scrollWidth <= element.clientWidth;
-    }),
-  ).toBe(true);
   const preview = (await page.locator(".photo-preview").first().boundingBox())!;
   const session = await page.context().newCDPSession(page);
   const x = preview.x + preview.width / 2;

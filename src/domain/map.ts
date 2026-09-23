@@ -1,10 +1,20 @@
-import type { Booth } from "../data/exhibition";
+import type { Booth, BoothEntry, Hall } from "../data/exhibition";
+
+export interface BoothSearchResult {
+  booth: Booth;
+  entry?: BoothEntry;
+}
+
+interface ScoredBoothSearchResult extends BoothSearchResult {
+  score: number;
+  entryIndex: number;
+}
 
 const normalize = (value: string) => {
   return value
     .normalize("NFKC")
     .toLowerCase()
-    .replace(/[\s\-_]/gu, "");
+    .replace(/[\s\p{P}\p{S}]/gu, "");
 };
 
 const boothNumber = (value: string) => {
@@ -56,7 +66,11 @@ function scoreTerm(query: string, raw: string): number {
   return 0;
 }
 
-export function searchBooths(query: string, entries: Booth[], preferredHall?: string): Booth[] {
+export function searchBooths(
+  query: string,
+  booths: Booth[],
+  preferredHall?: Hall,
+): BoothSearchResult[] {
   const q = normalize(query);
   if (!q) {
     return [];
@@ -65,36 +79,56 @@ export function searchBooths(query: string, entries: Booth[], preferredHall?: st
   const codeQuery = /^(?:w[1-5])?[a-z]\d+$/u.test(q);
   const numericQuery = /^\d+$/u.test(q) ? boothNumber(q) : undefined;
 
-  const matches = entries
-    .map((booth) => {
-      const code = normalize(booth.code);
-      let score = q === code || q === normalize(booth.hall + booth.code) ? 110 : 0;
+  const matches: ScoredBoothSearchResult[] = booths.flatMap((booth) => {
+    const code = normalize(booth.code);
+    let boothScore = q === code || q === normalize(booth.hall + booth.code) ? 110 : 0;
 
-      if (numericQuery !== undefined && boothNumber(code) === numericQuery) {
-        score = Math.max(score, 105);
-      }
+    if (numericQuery !== undefined && boothNumber(code) === numericQuery) {
+      boothScore = Math.max(boothScore, 105);
+    }
 
-      if (!codeQuery) {
-        for (const term of [...booth.names, ...booth.searchTerms]) {
-          score = Math.max(score, scoreTerm(q, term));
+    if (boothScore > 0) {
+      return [{ booth, score: boothScore, entryIndex: -1 }];
+    }
+    if (codeQuery) {
+      return booth.entries.flatMap((entry, entryIndex) => {
+        if (!entry.slot) {
+          return [];
         }
+
+        const slotCode = normalize(booth.code + entry.slot);
+        if (q !== slotCode && q !== normalize(booth.hall + slotCode)) {
+          return [];
+        }
+
+        return [{ booth, entry, score: 110, entryIndex }];
+      });
+    }
+
+    return booth.entries.flatMap((entry, entryIndex) => {
+      let score = 0;
+
+      for (const term of [...entry.names, ...entry.searchTerms]) {
+        score = Math.max(score, scoreTerm(q, term));
+      }
+      if (!score) {
+        return [];
       }
 
-      return { booth, score };
-    })
-    .filter(({ score }) => {
-      return score > 0;
+      return [{ booth, entry, score, entryIndex }];
     });
+  });
 
   matches.sort((a, b) => {
     return (
       b.score - a.score ||
       Number(b.booth.hall === preferredHall) - Number(a.booth.hall === preferredHall) ||
-      a.booth.id.localeCompare(b.booth.id)
+      a.booth.id.localeCompare(b.booth.id) ||
+      a.entryIndex - b.entryIndex
     );
   });
 
-  return matches.map(({ booth }) => {
-    return booth;
+  return matches.map(({ booth, entry }) => {
+    return { booth, entry };
   });
 }

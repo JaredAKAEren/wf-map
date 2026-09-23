@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ToggleGroupItem, ToggleGroupRoot } from "reka-ui";
 
-defineProps<{ modelValue: string; halls: string[] }>();
-const emit = defineEmits<{ select: [hall: string] }>();
+import type { Hall } from "../../data/exhibition";
+
+defineProps<{ modelValue: Hall; halls: readonly Hall[] }>();
+const emit = defineEmits<{ select: [hall: Hall] }>();
 </script>
 
 <template>

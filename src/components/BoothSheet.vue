@@ -43,6 +43,18 @@ let maxDownwardDistance = 0;
 let lastDragSample: { time: number; y: number } | undefined;
 let lastVelocityY = 0;
 
+function personalEntries(booth: Booth) {
+  return booth.entries.filter((entry) => {
+    return entry.slot && entry.names.length;
+  });
+}
+
+function boothNames(booth: Booth) {
+  return booth.entries.flatMap((entry) => {
+    return entry.names;
+  });
+}
+
 function handleOpenChange(open: boolean) {
   if (!open) {
     emit("close");
@@ -251,7 +263,18 @@ watch(expanded, (open) => {
             </div>
           </div>
           <DrawerDescription class="booth-names" @pointerdown.stop @touchstart.stop>
-            {{ displayed.names.join(" / ") || "名称待补充 · 可按编号定位" }}
+            <template v-if="personalEntries(displayed).length">
+              <span
+                v-for="entry in personalEntries(displayed)"
+                :key="entry.slot"
+                class="booth-entry"
+              >
+                {{ entry.slot }}-{{ entry.names.join(" / ") }}
+              </span>
+            </template>
+            <template v-else>
+              {{ boothNames(displayed).join(" / ") || "名称待补充 · 可按编号定位" }}
+            </template>
           </DrawerDescription>
           <CollapsibleRoot v-model:open="expanded" :unmount-on-hide="false">
             <CollapsibleTrigger class="details-link ui-text-button">
@@ -359,7 +382,10 @@ watch(expanded, (open) => {
   margin-top: 4px;
   font-size: 13px;
   line-height: 1.6;
-  word-break: break-all;
+}
+
+.booth-entry {
+  display: block;
 }
 
 .details-link {
