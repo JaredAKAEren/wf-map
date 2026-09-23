@@ -12,7 +12,7 @@ export function useMapViewport(
   map: Ref<SVGSVGElement | undefined>,
   callbacks: { onSelect: (point: Point) => void },
 ) {
-  const view = ref<View>({ x: 3490, y: 170, width: 690, height: 1240 });
+  const view = ref<View>({ x: 50, y: 170, width: 690, height: 1240 });
   const viewBox = computed(() => {
     return `${view.value.x} ${view.value.y} ${view.value.width} ${view.value.height}`;
   });
