@@ -54,6 +54,14 @@ describe("展位查找与位置", () => {
     expect(searchBooths("h", entries)).toEqual([]);
   });
 
+  it("忽略名称和输入中的标点与符号", () => {
+    const entries = [booth("symbols", "W1", "A01", [entry(["Q·B/OOM萌核邦"])])];
+
+    expect(searchBooths("qboom萌核邦", entries)[0]?.booth.id).toBe("symbols");
+    expect(searchBooths("Q·B/OOM萌核邦", entries)[0]?.booth.id).toBe("symbols");
+    expect(searchBooths("#!", entries)).toEqual([]);
+  });
+
   it("纯数字精确匹配编号并保留较低优先级的品牌结果", () => {
     const entries = [
       booth("w1-a52", "W1", "A52", [entry(["W1 Booth"])]),
@@ -130,9 +138,57 @@ describe("展位查找与位置", () => {
     expect(searchBooths("coreplay", booths, "W4")[0]?.booth.id).toBe("wf2026/W4/A13");
     expect(searchBooths("plzgydzx", booths, "W4")[0]?.booth.id).toBe("wf2026/W4/A31");
   });
+
+  it("W1、W2 的汉字拼音、首字母与日文假名罗马音能定位到原展商", () => {
+    const cases = [
+      ["yuanxingqidong", "wf2026/W1/H6", "01"],
+      ["yxqd", "wf2026/W1/H6", "01"],
+      ["qmjm", "wf2026/W2/A01", undefined],
+      ["shaonvmiaomiaowu", "wf2026/W2/K3", "06"],
+      ["zhushihuishejueduiseyudezainyanjiusuo", "wf2026/W1/H3", "02"],
+    ] as const;
+
+    for (const [query, boothId, slot] of cases) {
+      expect(
+        searchBooths(query, booths).some((result) => {
+          return result.booth.id === boothId && result.entry?.slot === slot;
+        }),
+      ).toBe(true);
+    }
+  });
 });
 
 describe("展位数据约束", () => {
+  it("W1、W2 含汉字或假名的记录有隐藏检索词，看不清的记录保持空白", () => {
+    const localizedEntries = booths
+      .filter((item) => {
+        return item.hall === "W1" || item.hall === "W2";
+      })
+      .flatMap((item) => {
+        return item.entries.filter((itemEntry) => {
+          return itemEntry.names.some((name) => {
+            return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(name);
+          });
+        });
+      });
+    const unclear = booths
+      .find((item) => {
+        return item.id === "wf2026/W1/B4";
+      })
+      ?.entries.find((itemEntry) => {
+        return itemEntry.slot === "03";
+      });
+
+    expect(localizedEntries.length).toBeGreaterThan(600);
+    expect(
+      localizedEntries.every((itemEntry) => {
+        return itemEntry.searchTerms.length > 0;
+      }),
+    ).toBe(true);
+    expect(unclear?.names).toEqual([]);
+    expect(unclear?.searchTerms).toEqual([]);
+  });
+
   it("展馆按现场从左到右排列", () => {
     expect(halls).toEqual(["W5", "W4", "W3", "W2", "W1"]);
   });

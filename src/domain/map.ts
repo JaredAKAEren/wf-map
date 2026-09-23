@@ -14,7 +14,7 @@ const normalize = (value: string) => {
   return value
     .normalize("NFKC")
     .toLowerCase()
-    .replace(/[\s\-_]/gu, "");
+    .replace(/[\s\p{P}\p{S}]/gu, "");
 };
 
 const boothNumber = (value: string) => {
