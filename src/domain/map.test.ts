@@ -108,6 +108,38 @@ describe("展位查找与位置", () => {
     expect(searchBooths("02", [personal])).toEqual([]);
   });
 
+  it("完整细分编号按条返回，支持展馆前缀和分隔符变体", () => {
+    const personal = booth("wf2026/W1/A1", "W1", "A1", [
+      entry(["展商一"], { slot: "01" }),
+      entry(["展商六"], { slot: "06" }),
+    ]);
+    const expected = [{ booth: personal, entry: personal.entries[1] }];
+
+    for (const query of ["W1-A1-06", "W1 A1 06", "W1A106", "A1-06", "a106"]) {
+      expect(searchBooths(query, [personal])).toEqual(expected);
+    }
+    expect(searchBooths("A1", [personal])).toEqual([{ booth: personal, entry: undefined }]);
+    expect(searchBooths("06", [personal])).toEqual([]);
+    expect(searchBooths("W2-A1-06", [personal])).toEqual([]);
+  });
+
+  it("名称待补的细分记录仅能通过完整编号找到", () => {
+    const unclear = booths.find((item) => {
+      return item.id === "wf2026/W1/B4";
+    });
+    const unclearEntry = unclear?.entries.find((item) => {
+      return item.slot === "03";
+    });
+
+    expect(unclearEntry?.names).toEqual([]);
+    expect(searchBooths("W1-B4-03", booths)).toContainEqual({
+      booth: unclear,
+      entry: unclearEntry,
+    });
+    expect(searchBooths("B4-03", booths)).toContainEqual({ booth: unclear, entry: unclearEntry });
+    expect(searchBooths("03", [unclear!])).toEqual([]);
+  });
+
   it("同一区域内多个展商命中时分别返回", () => {
     const personal = booth("wf2026/W2/M1", "W2", "M1", [
       entry(["甲工作室"], { slot: "01" }),

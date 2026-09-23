@@ -91,7 +91,18 @@ export function searchBooths(
       return [{ booth, score: boothScore, entryIndex: -1 }];
     }
     if (codeQuery) {
-      return [];
+      return booth.entries.flatMap((entry, entryIndex) => {
+        if (!entry.slot) {
+          return [];
+        }
+
+        const slotCode = normalize(booth.code + entry.slot);
+        if (q !== slotCode && q !== normalize(booth.hall + slotCode)) {
+          return [];
+        }
+
+        return [{ booth, entry, score: 110, entryIndex }];
+      });
     }
 
     return booth.entries.flatMap((entry, entryIndex) => {

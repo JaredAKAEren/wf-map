@@ -59,7 +59,7 @@ function resultCode(result: BoothSearchResult) {
 
 function resultSummary(result: BoothSearchResult) {
   if (result.entry) {
-    return result.entry.names.join(" / ");
+    return result.entry.names.join(" / ") || "名称待补充";
   }
 
   const personalCount = result.booth.entries.filter((entry) => {

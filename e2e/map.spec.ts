@@ -107,6 +107,19 @@ test("缺少 Array.toSorted 时仍能搜索并定位展位", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "A28", exact: true })).toBeVisible();
 });
 
+test("细分编号可搜索并定位所属主分区，空名记录显示待补充", async ({ page }) => {
+  await page.goto("/");
+  await searchFor(page, "W1-A1-06");
+
+  const result = searchResult(page, /W1 · A1-06/);
+  await expect(result).toBeVisible();
+  await result.click();
+  await expect(page.getByRole("heading", { name: "A1", exact: true })).toBeVisible();
+
+  await searchFor(page, "W1-B4-03");
+  await expect(searchResult(page, /W1 · B4-03.*名称待补充/)).toBeVisible();
+});
+
 test("搜索列表先选后跳转，展位查看状态可恢复", async ({ page }) => {
   await page.goto("/");
   const initial = await viewOf(page);
