@@ -10,6 +10,15 @@ import { useMapViewport } from "./composables/useMapViewport";
 import { booths, halls, isHall, type Booth, type Hall } from "./data/exhibition";
 import type { Point, View } from "./domain/viewport";
 
+type HallScrub = {
+  originHall: Hall;
+  originalView: View;
+  originalSelection: string;
+  startedAt: number;
+  steps: number;
+  frame: number;
+};
+
 const map = ref<SVGSVGElement>();
 const search = ref<InstanceType<typeof MapSearch>>();
 const selectedId = ref("");
@@ -19,6 +28,7 @@ const searchOpen = ref(false);
 const ready = ref(false);
 const pageHeight = ref("100dvh");
 let selectionVersion = 0;
+let hallScrub: HallScrub | undefined;
 const selected = computed(() => {
   return booths.find((booth) => {
     return booth.id === selectedId.value;
@@ -54,15 +64,27 @@ function selectAt(point: Point) {
   }
 }
 
-const { view, viewBox, moveTo, zoom, down, move, up, cancel, wheel } = useMapViewport(map, {
-  onSelect: selectAt,
-});
+const { view, viewBox, moveTo, setView, zoom, down, move, up, cancel, wheel } = useMapViewport(
+  map,
+  {
+    onSelect: selectAt,
+  },
+);
+
+function hallView(name: Hall): View {
+  return { x: offset(name) + 50, y: 160, width: 700, height: 1260 };
+}
 
 function focusHall(name: Hall) {
+  if (hallScrub) {
+    cancelAnimationFrame(hallScrub.frame);
+    hallScrub = undefined;
+  }
+
   selectionVersion++;
   hall.value = name;
   selectedId.value = "";
-  moveTo({ x: offset(name) + 50, y: 160, width: 700, height: 1260 });
+  moveTo(hallView(name));
 }
 
 function boothView(booth: Booth): View {
@@ -118,6 +140,90 @@ function choose(booth: Booth) {
   selectionVersion++;
 
   void revealBooth(booth, boothView(booth), selectionVersion);
+}
+
+function renderHallScrub(now: number) {
+  const state = hallScrub;
+  if (!state) {
+    return;
+  }
+
+  const base = hallView(state.originHall);
+  const progress = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? 1
+    : Math.min(1, (now - state.startedAt) / 140);
+  const eased = 1 - (1 - progress) ** 3;
+
+  setView({
+    x: state.originalView.x + (base.x - state.originalView.x + state.steps * 860) * eased,
+    y: state.originalView.y + (base.y - state.originalView.y) * eased,
+    width: state.originalView.width + (base.width - state.originalView.width) * eased,
+    height: state.originalView.height + (base.height - state.originalView.height) * eased,
+  });
+
+  if (progress < 1) {
+    state.frame = requestAnimationFrame(renderHallScrub);
+  } else {
+    state.frame = 0;
+  }
+}
+
+function startHallScrub() {
+  selectionVersion++;
+  const originalView = { ...view.value };
+
+  setView(originalView);
+  hallScrub = {
+    originHall: hall.value,
+    originalView,
+    originalSelection: selectedId.value,
+    startedAt: performance.now(),
+    steps: 0,
+    frame: requestAnimationFrame(renderHallScrub),
+  };
+
+  selectedId.value = "";
+}
+
+function moveHallScrub(steps: number) {
+  if (!hallScrub) {
+    return;
+  }
+
+  hallScrub.steps = steps;
+  if (!hallScrub.frame) {
+    const base = hallView(hallScrub.originHall);
+
+    setView({ ...base, x: base.x + steps * 860 });
+  }
+}
+
+function endHallScrub(steps: number) {
+  if (!hallScrub) {
+    return;
+  }
+
+  const originIndex = halls.indexOf(hallScrub.originHall);
+  const target = halls[Math.round(originIndex + steps)]!;
+
+  cancelAnimationFrame(hallScrub.frame);
+  hallScrub = undefined;
+  hall.value = target;
+  moveTo(hallView(target));
+}
+
+function cancelHallScrub() {
+  if (!hallScrub) {
+    return;
+  }
+
+  const state = hallScrub;
+
+  cancelAnimationFrame(state.frame);
+  hallScrub = undefined;
+  hall.value = state.originHall;
+  selectedId.value = state.originalSelection;
+  moveTo(state.originalView);
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
@@ -204,6 +310,10 @@ onMounted(async () => {
 });
 onUnmounted(() => {
   selectionVersion++;
+  if (hallScrub) {
+    cancelAnimationFrame(hallScrub.frame);
+  }
+
   persist();
   clearTimeout(saveTimer);
   window.removeEventListener("resize", syncPageHeight);
@@ -271,7 +381,16 @@ onUnmounted(() => {
         </button>
       </p>
     </Transition>
-    <HallSwitcher class="hall-position" :model-value="hall" :halls="halls" @select="focusHall" />
+    <HallSwitcher
+      class="hall-position"
+      :model-value="hall"
+      :halls="halls"
+      @select="focusHall"
+      @scrub-start="startHallScrub"
+      @scrub-move="moveHallScrub"
+      @scrub-end="endHallScrub"
+      @scrub-cancel="cancelHallScrub"
+    />
     <BoothSheet
       class="sheet-position"
       :booth="selected"

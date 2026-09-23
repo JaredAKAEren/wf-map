@@ -62,6 +62,13 @@ export function useMapViewport(
     }
     frame = requestAnimationFrame(tick);
   }
+
+  function setView(next: View) {
+    cancelTap();
+    stop();
+    view.value = next;
+  }
+
   function zoom(factor: number, anchor?: Point) {
     const base = destination ?? view.value;
     moveTo(
@@ -178,5 +185,5 @@ export function useMapViewport(
     stop();
     cancelTap();
   });
-  return { view, viewBox, moveTo, zoom, down, move, up, cancel, wheel };
+  return { view, viewBox, moveTo, setView, zoom, down, move, up, cancel, wheel };
 }

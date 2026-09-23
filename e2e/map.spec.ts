@@ -366,6 +366,153 @@ test("切馆及缩放有中间帧，双击与双击拖动不误选展位", async
   await expect(page.getByRole("dialog", { name: "展位详情" })).toHaveCount(0);
 });
 
+test("当前馆长按有反馈，拖动时地图跟手并在松开后吸附", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  const w5 = page.getByRole("button", { name: "W5", exact: true });
+  const w4 = page.getByRole("button", { name: "W4", exact: true });
+  const w3 = page.getByRole("button", { name: "W3", exact: true });
+  const w5Box = (await w5.boundingBox())!;
+  const w4Box = (await w4.boundingBox())!;
+  const startX = w5Box.x + w5Box.width / 2;
+  const y = w5Box.y + w5Box.height / 2;
+  const step = w4Box.x + w4Box.width / 2 - startX;
+  const initial = await viewOf(page);
+
+  await page.mouse.move(startX, y);
+  await page.mouse.down();
+  await page.waitForTimeout(380);
+  await expect(w5).toHaveClass(/is-held/);
+  await page.mouse.up();
+  expect(await viewOf(page)).toEqual(initial);
+
+  await page.mouse.move(startX, y);
+  await page.mouse.down();
+  await page.waitForTimeout(380);
+  await page.mouse.move(startX + step * 0.6, y, { steps: 4 });
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[2];
+    })
+    .toBe(700);
+  const intermediate = (await viewOf(page))[0]!;
+  expect(intermediate).toBeGreaterThan(50);
+  expect(intermediate).toBeLessThan(910);
+  await page.mouse.move(startX + step * 2.1, y, { steps: 8 });
+  await expect(w3).toHaveAttribute("data-state", "on");
+  await page.mouse.move(startX + step * 0.2, y, { steps: 8 });
+  await expect(w5).toHaveAttribute("data-state", "on");
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBeLessThan(910);
+  await page.mouse.move(startX + step * 2.1, y, { steps: 8 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(1770);
+  await expect(w3).toHaveAttribute("data-state", "on");
+
+  const w3Box = (await w3.boundingBox())!;
+  const reverseX = w3Box.x + w3Box.width / 2;
+  await page.mouse.move(reverseX, y);
+  await page.mouse.down();
+  await page.waitForTimeout(380);
+  await page.mouse.move(reverseX - step * 2.5, y, { steps: 8 });
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(50);
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(50);
+  await expect(w5).toHaveAttribute("data-state", "on");
+});
+
+test("快速长按滑动与取消恢复原视野，普通切馆仍可点击", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  const w5 = page.getByRole("button", { name: "W5", exact: true });
+  const w1 = page.getByRole("button", { name: "W1", exact: true });
+  const w5Box = (await w5.boundingBox())!;
+  const w1Box = (await w1.boundingBox())!;
+  const startX = w5Box.x + w5Box.width / 2;
+  const endX = w1Box.x + w1Box.width / 2;
+  const y = w5Box.y + w5Box.height / 2;
+
+  await page.mouse.move(startX, y);
+  await page.mouse.down();
+  await page.waitForTimeout(380);
+  await page.mouse.move(endX, y, { steps: 2 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(3490);
+  await page.getByRole("button", { name: "放大地图" }).click();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[2];
+    })
+    .toBe(525);
+  const original = await viewOf(page);
+  const session = await page.context().newCDPSession(page);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: endX, y, id: 0 }],
+  });
+  await page.waitForTimeout(380);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: endX - 110, y, id: 0 }],
+  });
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBeLessThan(3490);
+  await session.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
+  await expect
+    .poll(async () => {
+      return await viewOf(page);
+    })
+    .toEqual(original);
+  await expect(w1).toHaveAttribute("data-state", "on");
+
+  await w5.click();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(50);
+  const touchStart = (await w5.boundingBox())!;
+  const touchEnd = (await page.getByRole("button", { name: "W4", exact: true }).boundingBox())!;
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: touchStart.x + touchStart.width / 2, y, id: 1 }],
+  });
+  await page.waitForTimeout(380);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: touchEnd.x + touchEnd.width / 2, y, id: 1 }],
+  });
+  await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(910);
+  await session.detach();
+});
+
 test("减少动态效果直接到位，旧位置记录清理，照片能力和离线资源保持", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(() => {
