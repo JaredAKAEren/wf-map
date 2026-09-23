@@ -120,6 +120,83 @@ test("细分编号可搜索并定位所属主分区，空名记录显示待补�
   await expect(searchResult(page, /W1 · B4-03.*名称待补充/)).toBeVisible();
 });
 
+test("个人摊位均分两列，编号与缺失名称完整显示", async ({ page }) => {
+  for (const width of [320, 360, 700]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/");
+    await searchFor(page, "W1E8");
+    await searchResult(page, /W1 · E8/).click();
+    await expect(page.getByRole("heading", { name: "E8", exact: true })).toBeVisible();
+
+    const columns = page.locator(".personal-column");
+    await expect(columns).toHaveCount(2);
+    await expect(columns.nth(0).locator(".booth-entry")).toHaveCount(6);
+    await expect(columns.nth(1).locator(".booth-entry")).toHaveCount(7);
+    await expect(page.locator(".booth-slot")).toHaveText([
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "06",
+      "07",
+      "08",
+      "09",
+      "10",
+      "11",
+      "12",
+      "13",
+    ]);
+    const layout = await page.locator(".personal-entries").evaluate((element) => {
+      return {
+        width: element.clientWidth,
+        content: element.scrollWidth,
+        wordBreak: getComputedStyle(element.querySelector(".booth-entry-name")!).wordBreak,
+      };
+    });
+    expect(layout.content).toBeLessThanOrEqual(layout.width);
+    expect(layout.wordBreak).toBe("normal");
+  }
+
+  await searchFor(page, "W1-B4-03");
+  await searchResult(page, /W1 · B4-03/).click();
+  await expect(
+    page.locator(".booth-entry", { has: page.locator(".booth-slot", { hasText: "03" }) }),
+  ).toContainText("名称待补充");
+});
+
+test("搜索选择和地图点选都把展位框移到详情卡上方，地图点选不缩放", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  const initialWidth = (await viewOf(page))[2];
+  const point = await mapPoint(page, 250, 1310);
+  await page.mouse.click(point.x, point.y);
+  await expect(page.getByRole("heading", { name: "A37", exact: true })).toBeVisible();
+  await expect
+    .poll(async () => {
+      const booth = (await page.locator(".selected-booth").boundingBox())!;
+      const sheet = (await page.locator(".sheet-position").boundingBox())!;
+      const hall = (await page.getByRole("group", { name: "展馆选择" }).boundingBox())!;
+
+      return booth.y > hall.y + hall.height + 8 && booth.y + booth.height < sheet.y - 8;
+    })
+    .toBe(true);
+  expect((await viewOf(page))[2]).toBe(initialWidth);
+
+  await searchFor(page, "W5A37");
+  await searchResult(page, /W5 · A37/).click();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[2];
+    })
+    .toBe(420);
+  const booth = (await page.locator(".selected-booth").boundingBox())!;
+  const sheet = (await page.locator(".sheet-position").boundingBox())!;
+  const hall = (await page.getByRole("group", { name: "展馆选择" }).boundingBox())!;
+  expect(booth.y).toBeGreaterThan(hall.y + hall.height + 8);
+  expect(booth.y + booth.height).toBeLessThan(sheet.y - 8);
+});
+
 test("搜索列表先选后跳转，展位查看状态可恢复", async ({ page }) => {
   await page.goto("/");
   const initial = await viewOf(page);

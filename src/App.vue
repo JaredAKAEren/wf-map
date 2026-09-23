@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Preferences } from "@capacitor/preferences";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 import BoothSheet from "./components/BoothSheet.vue";
 import MapSearch from "./components/MapSearch.vue";
@@ -18,6 +18,7 @@ const notice = ref("");
 const searchOpen = ref(false);
 const ready = ref(false);
 const pageHeight = ref("100dvh");
+let selectionVersion = 0;
 const selected = computed(() => {
   return booths.find((booth) => {
     return booth.id === selectedId.value;
@@ -41,9 +42,16 @@ function boothAt(point: Point) {
 
 function selectAt(point: Point) {
   const booth = boothAt(point);
+
   void search.value?.close(false);
   selectedId.value = booth?.id ?? "";
   notice.value = "";
+  selectionVersion++;
+
+  if (booth) {
+    hall.value = booth.hall;
+    void revealBooth(booth, { ...view.value }, selectionVersion);
+  }
 }
 
 const { view, viewBox, moveTo, zoom, down, move, up, cancel, wheel } = useMapViewport(map, {
@@ -51,25 +59,65 @@ const { view, viewBox, moveTo, zoom, down, move, up, cancel, wheel } = useMapVie
 });
 
 function focusHall(name: Hall) {
+  selectionVersion++;
   hall.value = name;
   selectedId.value = "";
   moveTo({ x: offset(name) + 50, y: 160, width: 700, height: 1260 });
 }
 
-function focus(booth: Booth) {
-  hall.value = booth.hall;
-  moveTo({
+function boothView(booth: Booth): View {
+  return {
     x: offset(booth.hall) + booth.x + booth.width / 2 - 210,
     y: booth.y + booth.height / 2 - 260,
     width: 420,
     height: 520,
+  };
+}
+
+async function revealBooth(booth: Booth, base: View, version: number) {
+  await nextTick();
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
   });
+  if (version !== selectionVersion || selectedId.value !== booth.id || searchOpen.value) {
+    return;
+  }
+
+  const mapRect = map.value?.getBoundingClientRect();
+  const headerRect = document.querySelector<HTMLElement>(".map-header")?.getBoundingClientRect();
+  const hallRect = document.querySelector<HTMLElement>(".hall-position")?.getBoundingClientRect();
+  const sheetRect = document.querySelector<HTMLElement>(".sheet-position")?.getBoundingClientRect();
+
+  if (!mapRect || !headerRect || !hallRect || !sheetRect) {
+    moveTo(base);
+    return;
+  }
+
+  const screenPadding = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue("--screen-padding"),
+  );
+  const hallTop = window.innerWidth >= 700 ? mapRect.top + 20 : headerRect.top - screenPadding + 76;
+  const visibleTop = Math.max(headerRect.bottom, hallTop + hallRect.height) + 16;
+  const visibleBottom = sheetRect.top - 16;
+  const targetScreenY =
+    visibleBottom > visibleTop ? (visibleTop + visibleBottom) / 2 : visibleBottom;
+  const scale = Math.min(mapRect.width / base.width, mapRect.height / base.height);
+  const boothWorldY = booth.y + booth.height / 2;
+  const currentScreenY =
+    mapRect.top + (mapRect.height - base.height * scale) / 2 + (boothWorldY - base.y) * scale;
+
+  moveTo({ ...base, y: base.y + (currentScreenY - targetScreenY) / scale });
 }
 
 function choose(booth: Booth) {
   selectedId.value = booth.id;
+  hall.value = booth.hall;
   notice.value = "";
-  focus(booth);
+  selectionVersion++;
+
+  void revealBooth(booth, boothView(booth), selectionVersion);
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
@@ -155,6 +203,7 @@ onMounted(async () => {
   persist();
 });
 onUnmounted(() => {
+  selectionVersion++;
   persist();
   clearTimeout(saveTimer);
   window.removeEventListener("resize", syncPageHeight);

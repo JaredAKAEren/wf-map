@@ -45,8 +45,15 @@ let lastVelocityY = 0;
 
 function personalEntries(booth: Booth) {
   return booth.entries.filter((entry) => {
-    return entry.slot && entry.names.length;
+    return entry.slot;
   });
+}
+
+function personalColumns(booth: Booth) {
+  const entries = personalEntries(booth);
+  const midpoint = Math.floor(entries.length / 2);
+
+  return entries.length === 1 ? [entries] : [entries.slice(0, midpoint), entries.slice(midpoint)];
 }
 
 function boothNames(booth: Booth) {
@@ -262,15 +269,25 @@ watch(expanded, (open) => {
               <span>{{ displayed.hall }}馆</span>
             </div>
           </div>
-          <DrawerDescription class="booth-names" @pointerdown.stop @touchstart.stop>
+          <DrawerDescription as="div" class="booth-names" @pointerdown.stop @touchstart.stop>
             <template v-if="personalEntries(displayed).length">
-              <span
-                v-for="entry in personalEntries(displayed)"
-                :key="entry.slot"
-                class="booth-entry"
+              <div
+                class="personal-entries"
+                :class="{ 'is-single': personalEntries(displayed).length === 1 }"
               >
-                {{ entry.slot }}-{{ entry.names.join(" / ") }}
-              </span>
+                <div
+                  v-for="(column, index) in personalColumns(displayed)"
+                  :key="index"
+                  class="personal-column"
+                >
+                  <div v-for="entry in column" :key="entry.slot" class="booth-entry">
+                    <span class="booth-slot">{{ entry.slot }}</span>
+                    <span class="booth-entry-name">{{
+                      entry.names.join(" / ") || "名称待补充"
+                    }}</span>
+                  </div>
+                </div>
+              </div>
             </template>
             <template v-else>
               {{ boothNames(displayed).join(" / ") || "名称待补充 · 可按编号定位" }}
@@ -385,7 +402,42 @@ watch(expanded, (open) => {
 }
 
 .booth-entry {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  margin-bottom: 4px;
+}
+
+.personal-entries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.personal-entries.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.personal-column {
+  min-width: 0;
+}
+
+.booth-slot {
+  flex: none;
+  padding: 0 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: #fff;
+  color: #30271d;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.booth-entry-name {
+  min-width: 0;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .details-link {
