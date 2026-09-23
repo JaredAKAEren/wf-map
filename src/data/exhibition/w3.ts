@@ -9,7 +9,10 @@ export const w3: BoothConfig[] = [
     y: 246,
     width: 116,
     height: 102,
-    entries: enterpriseEntries(["HEATBOYS火仔动漫", "小蛮蜂小王子"], []),
+    entries: enterpriseEntries(
+      ["HEATBOYS火仔动漫", "小蜜蜂小王子"],
+      ["HEATBOYS", "huo zai dong man", "hzdm", "xiao mi feng xiao wang zi", "xmfxwz"],
+    ),
   },
   {
     code: "A02",
@@ -17,7 +20,7 @@ export const w3: BoothConfig[] = [
     y: 352,
     width: 80,
     height: 76,
-    entries: enterpriseEntries(["驭意堂"], []),
+    entries: enterpriseEntries(["驭意堂"], ["yu yi tang", "yyt"]),
   },
   {
     code: "A03",
@@ -25,7 +28,10 @@ export const w3: BoothConfig[] = [
     y: 431,
     width: 99,
     height: 90,
-    entries: enterpriseEntries(["大漫匠", "核金重构"], []),
+    entries: enterpriseEntries(
+      ["大漫匠", "核金重构"],
+      ["da man jiang", "dmj", "he jin chong gou", "hjcg"],
+    ),
   },
   {
     code: "A04",
@@ -41,7 +47,7 @@ export const w3: BoothConfig[] = [
     y: 642,
     width: 82,
     height: 83,
-    entries: enterpriseEntries(["Cosmek", "GGG", "GIGA GARAGE"], []),
+    entries: enterpriseEntries(["Cosmek", "GIGA GARAGE"], []),
   },
   {
     code: "A06",
@@ -49,7 +55,10 @@ export const w3: BoothConfig[] = [
     y: 732,
     width: 115,
     height: 105,
-    entries: enterpriseEntries(["D4 Toys Co., Limited", "Flame Toys", "Unix Square", "千值练"], []),
+    entries: enterpriseEntries(
+      ["D4 Toys Co., Limited", "Flame Toys", "Unix Square", "千值练"],
+      ["qian zhi lian", "qzl"],
+    ),
   },
   {
     code: "A07",
@@ -57,7 +66,7 @@ export const w3: BoothConfig[] = [
     y: 865,
     width: 71,
     height: 96,
-    entries: enterpriseEntries(["机械司"], []),
+    entries: enterpriseEntries(["械炼司"], ["xie lian si", "xls"]),
   },
   {
     code: "A08",
@@ -65,7 +74,7 @@ export const w3: BoothConfig[] = [
     y: 965,
     width: 82,
     height: 72,
-    entries: enterpriseEntries(["升维堂"], []),
+    entries: enterpriseEntries(["升维堂"], ["sheng wei tang", "swt"]),
   },
   {
     code: "A09",
@@ -73,7 +82,7 @@ export const w3: BoothConfig[] = [
     y: 1041,
     width: 83,
     height: 72,
-    entries: enterpriseEntries(["森宝积木"], []),
+    entries: enterpriseEntries(["森宝积木"], ["sen bao ji mu", "sbjm"]),
   },
   {
     code: "A10",
@@ -81,7 +90,7 @@ export const w3: BoothConfig[] = [
     y: 1141,
     width: 82,
     height: 83,
-    entries: enterpriseEntries(["原子盒"], []),
+    entries: enterpriseEntries(["原子盒"], ["yuan zi he", "yzh"]),
   },
   {
     code: "A13",
@@ -99,7 +108,7 @@ export const w3: BoothConfig[] = [
     height: 140,
     entries: enterpriseEntries(
       [
-        "DSPIAE",
+        "迪斯派DSPIAE",
         "geehobby",
         "夜之工坊",
         "向上委员会",
@@ -108,7 +117,17 @@ export const w3: BoothConfig[] = [
         "cavico",
         "大火鸟制造",
       ],
-      [],
+      [
+        "DSPIAE",
+        "di si pai",
+        "dsp",
+        "ye zhi gong fang",
+        "yzgf",
+        "xiang shang wei yuan hui",
+        "xswyh",
+        "da huo niao zhi zao",
+        "dhnzz",
+      ],
     ),
   },
   {
@@ -117,7 +136,10 @@ export const w3: BoothConfig[] = [
     y: 1048,
     width: 122,
     height: 64,
-    entries: enterpriseEntries(["圣斯基", "御模道", "TOYMIE", "初穗重工"], []),
+    entries: enterpriseEntries(
+      ["圣斯基", "御模道", "TOYMIE", "初穹重工"],
+      ["sheng si ji", "ssj", "yu mo dao", "ymd", "chu qiong zhong gong", "cqzg"],
+    ),
   },
   {
     code: "A18",
@@ -125,7 +147,7 @@ export const w3: BoothConfig[] = [
     y: 867,
     width: 120,
     height: 171,
-    entries: enterpriseEntries(["布鲁可BLOKEES"], []),
+    entries: enterpriseEntries(["布鲁可BLOKEES"], ["BLOKEES", "bu lu ke", "blk"]),
   },
   {
     code: "A19",
@@ -133,7 +155,10 @@ export const w3: BoothConfig[] = [
     y: 760,
     width: 116,
     height: 78,
-    entries: enterpriseEntries(["核能矩阵", "万象聚变"], []),
+    entries: enterpriseEntries(
+      ["核能矩阵", "万象聚变"],
+      ["he neng ju zhen", "hnjz", "wan xiang ju bian", "wxjb"],
+    ),
   },
   {
     code: "A21",
@@ -149,7 +174,7 @@ export const w3: BoothConfig[] = [
     y: 459,
     width: 121,
     height: 62,
-    entries: enterpriseEntries(["橘猫工业", "Aforce"], []),
+    entries: enterpriseEntries(["橘猫工业", "Aforce"], ["ju mao gong ye", "jmgy"]),
   },
   {
     code: "A23",
@@ -165,7 +190,7 @@ export const w3: BoothConfig[] = [
     y: 245,
     width: 113,
     height: 133,
-    entries: enterpriseEntries(["藏道造物", "ZEN OF META"], []),
+    entries: enterpriseEntries(["藏道造物ZEN OF META"], ["ZEN OF META", "cang dao zao wu", "cdzw"]),
   },
   {
     code: "A25",
@@ -173,7 +198,10 @@ export const w3: BoothConfig[] = [
     y: 245,
     width: 119,
     height: 80,
-    entries: enterpriseEntries(["星环重工", "核诚治造"], []),
+    entries: enterpriseEntries(
+      ["星环重工", "核诚治造"],
+      ["xing huan zhong gong", "xhzg", "he cheng zhi zao", "hczz"],
+    ),
   },
   {
     code: "A26",
@@ -181,7 +209,7 @@ export const w3: BoothConfig[] = [
     y: 343,
     width: 84,
     height: 77,
-    entries: enterpriseEntries(["TouchToys逗趣"], []),
+    entries: enterpriseEntries(["TouchToys冭趣"], ["TouchToys", "tai qu", "tq"]),
   },
   {
     code: "A27",
@@ -189,7 +217,7 @@ export const w3: BoothConfig[] = [
     y: 432,
     width: 104,
     height: 89,
-    entries: enterpriseEntries(["U·P.FIGURES", "喜玩社"], []),
+    entries: enterpriseEntries(["U·P.FINEGURES", "喜玩社"], ["xi wan she", "xws"]),
   },
   {
     code: "A28",
@@ -197,7 +225,7 @@ export const w3: BoothConfig[] = [
     y: 552,
     width: 115,
     height: 83,
-    entries: enterpriseEntries(["多美", "TAKARA TOMY"], []),
+    entries: enterpriseEntries(["多美TAKARA TOMY"], ["TAKARA TOMY", "duo mei", "dm"]),
   },
   {
     code: "A30",
@@ -205,7 +233,10 @@ export const w3: BoothConfig[] = [
     y: 648,
     width: 122,
     height: 188,
-    entries: enterpriseEntries(["国模新势力", "美佳龙MJL"], []),
+    entries: enterpriseEntries(
+      ["国模新势力", "美佳龙", "骸骨"],
+      ["guo mo xin shi li", "gmxsl", "mei jia long", "mjl", "hai gu", "hg"],
+    ),
   },
   {
     code: "A31",
@@ -213,7 +244,7 @@ export const w3: BoothConfig[] = [
     y: 866,
     width: 104,
     height: 95,
-    entries: enterpriseEntries(["棱界封神榜"], []),
+    entries: enterpriseEntries(["模界封神榜"], ["mo jie feng shen bang", "mjfsb"]),
   },
   {
     code: "A33",
@@ -223,24 +254,59 @@ export const w3: BoothConfig[] = [
     height: 117,
     entries: enterpriseEntries(
       [
-        "异世界旅行手札",
+        "异世界旅行手帐",
         "R-PRODUCTION",
         "乐创玩具(KBB)",
         "大林模型",
         "迪雷克玩模",
-        "非改刻",
+        "非攻制",
         "乐宅文化",
         "冥王工作室",
         "墨山海",
         "千秋赏",
-        "圣造物工作室",
-        "硅水_GOSU",
+        "圣遗物工作室",
+        "礁水_GOSU",
         "铁幕工作室",
-        "极境动漫",
+        "楹镜动漫",
         "奇鲸动力",
         "仙乐玩具",
       ],
-      [],
+      [
+        "yi shi jie lv xing shou zhang",
+        "ysjlxsz",
+        "KBB",
+        "le chuang wan ju",
+        "lcwj",
+        "da lin mo xing",
+        "dlmx",
+        "di lei ke wan mo",
+        "dlkwm",
+        "fei gong zhi",
+        "fgz",
+        "le zhai wen hua",
+        "lzwh",
+        "ming wang gong zuo shi",
+        "mwgzs",
+        "mo shan hai",
+        "msh",
+        "qian qiu shang",
+        "qqs",
+        "sheng yi wu gong zuo shi",
+        "sywgzs",
+        "GOSU",
+        "jiao shui",
+        "js",
+        "tie mu gong zuo shi",
+        "tmgzs",
+        "ying jing dong man",
+        "yjdm",
+        "qi jing dong li",
+        "qjdl",
+        "xian le wan ju",
+        "xlwj",
+        "xian yue wan ju",
+        "xywj",
+      ],
     ),
   },
   {
@@ -249,7 +315,7 @@ export const w3: BoothConfig[] = [
     y: 1141,
     width: 80,
     height: 78,
-    entries: enterpriseEntries(["小号手", "TRUMPETER"], []),
+    entries: enterpriseEntries(["小号手TRUMPETER"], ["TRUMPETER", "xiao hao shou", "xhs"]),
   },
   {
     code: "A35",
@@ -257,7 +323,10 @@ export const w3: BoothConfig[] = [
     y: 1222,
     width: 67,
     height: 85,
-    entries: enterpriseEntries(["中车长鸣小火车模型", "CHANGMING"], []),
+    entries: enterpriseEntries(
+      ["中车长鸣小火车模型CHANGMING"],
+      ["CHANGMING", "zhong che chang ming xiao huo che mo xing", "zccmxhcmx"],
+    ),
   },
   {
     code: "A36",
@@ -265,7 +334,7 @@ export const w3: BoothConfig[] = [
     y: 1312,
     width: 80,
     height: 73,
-    entries: enterpriseEntries(["灵机魂", "METUYOYZ", "DanActFigui"], []),
+    entries: enterpriseEntries(["灵机魂", "METYTOYZ", "DanActFigui"], ["ling ji hun", "ljh"]),
   },
   {
     code: "A37",
@@ -286,7 +355,7 @@ export const w3: BoothConfig[] = [
         "HASBRO",
         "GC",
       ],
-      [],
+      ["ou wan", "ow", "KOTOBUKIYA", "shou wu", "sw"],
     ),
   },
   {
@@ -295,7 +364,7 @@ export const w3: BoothConfig[] = [
     y: 1141,
     width: 80,
     height: 78,
-    entries: enterpriseEntries(["和模线"], []),
+    entries: enterpriseEntries(["和模线"], ["he mo xian", "he muo xian", "hmx"]),
   },
   {
     code: "A39",
@@ -303,7 +372,7 @@ export const w3: BoothConfig[] = [
     y: 1141,
     width: 79,
     height: 78,
-    entries: enterpriseEntries(["神猫跳动", "HASUKI"], []),
+    entries: enterpriseEntries(["神猫跳动HASUKI"], ["HASUKI", "shen mao tiao dong", "smtd"]),
   },
   {
     code: "A40",
@@ -319,7 +388,7 @@ export const w3: BoothConfig[] = [
     y: 1032,
     width: 80,
     height: 80,
-    entries: enterpriseEntries(["小黄鸟工作室"], []),
+    entries: enterpriseEntries(["小黄鸟工作室"], ["xiao huang niao gong zuo shi", "xhngzs"]),
   },
   {
     code: "A42",
@@ -327,7 +396,10 @@ export const w3: BoothConfig[] = [
     y: 866,
     width: 108,
     height: 119,
-    entries: enterpriseEntries(["壹理创玩", "谷印动漫", "光景"], []),
+    entries: enterpriseEntries(
+      ["壹理创玩", "谷印动漫", "光冕"],
+      ["yi li chuang wan", "ylcw", "gu yin dong man", "gydm", "guang mian", "gm"],
+    ),
   },
   {
     code: "A43",
@@ -335,7 +407,7 @@ export const w3: BoothConfig[] = [
     y: 734,
     width: 115,
     height: 102,
-    entries: enterpriseEntries(["卓辰", "将魂姬"], []),
+    entries: enterpriseEntries(["卓匠", "将魂姬"], ["zhuo jiang", "zj", "jiang hun ji", "jhj"]),
   },
   {
     code: "A45",
@@ -343,7 +415,7 @@ export const w3: BoothConfig[] = [
     y: 552,
     width: 82,
     height: 110,
-    entries: enterpriseEntries(["帝国老客"], []),
+    entries: enterpriseEntries(["帝国苍穹"], ["di guo cang qiong", "dgcq"]),
   },
   {
     code: "A46",

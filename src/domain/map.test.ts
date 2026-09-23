@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { booths, type Booth, type BoothEntry, type Hall } from "../data/exhibition";
+import { booths, halls, type Booth, type BoothEntry, type Hall } from "../data/exhibition";
 import { searchBooths } from "./map";
 
 const entry = (
@@ -133,6 +133,10 @@ describe("展位查找与位置", () => {
 });
 
 describe("展位数据约束", () => {
+  it("展馆按现场从左到右排列", () => {
+    expect(halls).toEqual(["W5", "W4", "W3", "W2", "W1"]);
+  });
+
   it("区域 ID 和馆内编号唯一，个人编号合法且区域内唯一", () => {
     const ids = booths.map((item) => {
       return item.id;

@@ -5,12 +5,12 @@ export function enterpriseEntries(names: string[], searchTerms: string[] = []): 
 }
 
 /**
- * 个人展商直接维护在所属主分区的 entries 中。数组必须严格按展商图的 01、02... 顺序排列，不能多录或漏录；无法辨认的名称用空字符串占位，编号由 index 自动拼接。
+ * 个人展商直接维护在所属主分区的 entries 中。数组必须严格按展商图的编号顺序排列，不能多录或漏录；无法辨认的名称用空字符串占位，编号由 index 自动拼接。仅当原图编号不是从 01 开始时传入 startSlot。
  */
-export function personalEntries(names: string[]): BoothEntry[] {
+export function personalEntries(names: string[], startSlot = 1): BoothEntry[] {
   return names.map((name, index) => {
     return {
-      slot: String(index + 1).padStart(2, "0"),
+      slot: String(index + startSlot).padStart(2, "0"),
       names: name ? [name] : [],
       searchTerms: [],
     };

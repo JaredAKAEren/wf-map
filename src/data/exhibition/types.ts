@@ -1,4 +1,4 @@
-export const halls = ["W1", "W2", "W3", "W4", "W5"] as const;
+export const halls = ["W5", "W4", "W3", "W2", "W1"] as const;
 
 export type Hall = (typeof halls)[number];
 
