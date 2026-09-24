@@ -9,7 +9,7 @@ import {
   DrawerRoot,
   DrawerTitle,
 } from "reka-ui";
-import { nextTick, ref, shallowRef, watch } from "vue";
+import { nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
 
 import type { Booth } from "../data/exhibition";
 import PhotoPanel from "./PhotoPanel.vue";
@@ -23,6 +23,7 @@ const expanded = ref(false);
 const gestureDragging = ref(false);
 const gestureExpanded = ref(false);
 const gestureY = ref(0);
+const gesturePhotoHeight = ref<number>();
 const expandSwipeThreshold = 48;
 const closeSwipeThreshold = 40;
 const reverseCancelThreshold = 10;
@@ -42,6 +43,9 @@ let dismissCancelled = false;
 let maxDownwardDistance = 0;
 let lastDragSample: { time: number; y: number } | undefined;
 let lastVelocityY = 0;
+let gestureResizeObserver: ResizeObserver | undefined;
+let revealCleanupTimer: ReturnType<typeof setTimeout> | undefined;
+let gestureVersion = 0;
 
 function personalEntries(booth: Booth) {
   return booth.entries.filter((entry) => {
@@ -86,8 +90,23 @@ function startExpandGesture(clientY: number, target: EventTarget | null) {
   maxDownwardDistance = 0;
   lastDragSample = undefined;
   lastVelocityY = 0;
+  gestureResizeObserver?.disconnect();
+  clearTimeout(revealCleanupTimer);
+  gesturePhotoHeight.value = undefined;
+  gestureVersion++;
 
   return true;
+}
+
+function syncExpandedGesture() {
+  if (!sheetElement || !gestureDragging.value) {
+    return;
+  }
+
+  const upwardDistance = Math.max(0, gestureStartY - gestureCurrentY);
+  const currentGrowth = Math.max(0, sheetElement.getBoundingClientRect().height - collapsedHeight);
+
+  gestureY.value = currentGrowth - Math.min(upwardDistance, expandedGrowth);
 }
 
 async function expandDuringGesture() {
@@ -96,7 +115,9 @@ async function expandDuringGesture() {
   }
 
   expansionPending = true;
+  const version = gestureVersion;
   gestureExpanded.value = true;
+  gesturePhotoHeight.value = 0;
   expanded.value = true;
   await nextTick();
   await new Promise<void>((resolve) => {
@@ -104,15 +125,39 @@ async function expandDuringGesture() {
       resolve();
     });
   });
+  if (version !== gestureVersion) {
+    return;
+  }
   if (!sheetElement) {
     expansionPending = false;
+    gesturePhotoHeight.value = undefined;
     return;
   }
 
-  expandedGrowth = Math.max(0, sheetElement.getBoundingClientRect().height - collapsedHeight);
+  const reveal = sheetElement.querySelector<HTMLElement>(".photo-reveal");
+  const contentHeight = reveal?.scrollHeight ?? 0;
+  const maxHeight = Number.parseFloat(getComputedStyle(sheetElement).maxHeight);
+  expandedGrowth = Math.min(contentHeight, Math.max(0, maxHeight - collapsedHeight));
   expandedDuringGesture = true;
   expansionPending = false;
-  updateExpandGesture(gestureCurrentY, performance.now());
+  gestureResizeObserver = new ResizeObserver(syncExpandedGesture);
+  gestureResizeObserver.observe(sheetElement);
+  syncExpandedGesture();
+  requestAnimationFrame(() => {
+    if (version !== gestureVersion) {
+      return;
+    }
+
+    gesturePhotoHeight.value = contentHeight;
+    revealCleanupTimer = setTimeout(() => {
+      if (version === gestureVersion) {
+        gesturePhotoHeight.value = undefined;
+      }
+    }, 300);
+  });
+  if (!gestureDragging.value) {
+    sheetElement = undefined;
+  }
 }
 
 function recordDragSample(clientY: number, time: number) {
@@ -155,8 +200,8 @@ function updateExpandGesture(clientY: number, time: number) {
     return;
   }
 
-  // 展开前后保持卡片顶部连续，新增内容先向下出现，再随继续上拉回到最终位置。
-  gestureY.value = Math.max(0, expandedGrowth - upwardDistance);
+  // 内容高度过渡时，用实时高度补偿卡片位移，维持手指对应的顶部位置。
+  syncExpandedGesture();
 }
 
 function finishExpandGesture() {
@@ -168,7 +213,10 @@ function finishExpandGesture() {
     !dismissCancelled &&
     (downwardDistance >= closeSwipeThreshold || releaseVelocity > releaseVelocityThreshold);
   gestureDragging.value = false;
-  sheetElement = undefined;
+  gestureResizeObserver?.disconnect();
+  if (!expansionPending) {
+    sheetElement = undefined;
+  }
   if (shouldClose) {
     emit("close");
   } else {
@@ -228,6 +276,10 @@ watch(
       gestureY.value = 0;
       pointerId = undefined;
       sheetElement = undefined;
+      gesturePhotoHeight.value = undefined;
+      gestureResizeObserver?.disconnect();
+      clearTimeout(revealCleanupTimer);
+      gestureVersion++;
     }
   },
 );
@@ -236,6 +288,12 @@ watch(expanded, (open) => {
   if (!open) {
     gestureExpanded.value = false;
   }
+});
+
+onUnmounted(() => {
+  gestureResizeObserver?.disconnect();
+  clearTimeout(revealCleanupTimer);
+  gestureVersion++;
 });
 </script>
 
@@ -300,6 +358,10 @@ watch(expanded, (open) => {
             </CollapsibleTrigger>
             <CollapsibleContent
               class="photo-reveal"
+              :class="{ 'is-gesture-reveal': gesturePhotoHeight !== undefined }"
+              :style="
+                gesturePhotoHeight === undefined ? undefined : { height: `${gesturePhotoHeight}px` }
+              "
               :inert="!expanded"
               @pointerdown.stop
               @touchstart.stop
@@ -424,14 +486,16 @@ watch(expanded, (open) => {
 }
 
 .booth-slot {
-  flex: none;
-  padding: 0 3px;
+  flex: 0 0 26px;
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
-  border-radius: 2px;
+  border-radius: 5px;
   background: #fff;
   color: #30271d;
   font-size: 11px;
   line-height: 1.5;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .booth-entry-name {
@@ -474,6 +538,10 @@ watch(expanded, (open) => {
 .booth-sheet.is-gesture-dragging .photo-reveal,
 .booth-sheet.is-gesture-expanded .photo-reveal {
   animation: none;
+}
+
+.photo-reveal.is-gesture-reveal {
+  transition: height var(--duration-normal) ease-out;
 }
 
 @keyframes reveal {

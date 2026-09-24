@@ -108,29 +108,29 @@ async function revealBooth(booth: Booth, base: View, version: number) {
   }
 
   const mapRect = map.value?.getBoundingClientRect();
-  const headerRect = document.querySelector<HTMLElement>(".map-header")?.getBoundingClientRect();
-  const hallRect = document.querySelector<HTMLElement>(".hall-position")?.getBoundingClientRect();
   const sheetRect = document.querySelector<HTMLElement>(".sheet-position")?.getBoundingClientRect();
 
-  if (!mapRect || !headerRect || !hallRect || !sheetRect) {
+  if (!mapRect || !sheetRect) {
     moveTo(base);
     return;
   }
 
-  const screenPadding = Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue("--screen-padding"),
-  );
-  const hallTop = window.innerWidth >= 700 ? mapRect.top + 20 : headerRect.top - screenPadding + 76;
-  const visibleTop = Math.max(headerRect.bottom, hallTop + hallRect.height) + 16;
-  const visibleBottom = sheetRect.top - 16;
-  const targetScreenY =
-    visibleBottom > visibleTop ? (visibleTop + visibleBottom) / 2 : visibleBottom;
   const scale = Math.min(mapRect.width / base.width, mapRect.height / base.height);
-  const boothWorldY = booth.y + booth.height / 2;
-  const currentScreenY =
-    mapRect.top + (mapRect.height - base.height * scale) / 2 + (boothWorldY - base.y) * scale;
+  const boothBottom =
+    mapRect.top +
+    (mapRect.height - base.height * scale) / 2 +
+    (booth.y + booth.height - base.y) * scale;
+  const overlap = boothBottom - sheetRect.top;
+  const target = overlap > 0 ? { ...base, y: base.y + (overlap + 12) / scale } : base;
 
-  moveTo({ ...base, y: base.y + (currentScreenY - targetScreenY) / scale });
+  if (
+    target.x !== view.value.x ||
+    target.y !== view.value.y ||
+    target.width !== view.value.width ||
+    target.height !== view.value.height
+  ) {
+    moveTo(target);
+  }
 }
 
 function choose(booth: Booth) {

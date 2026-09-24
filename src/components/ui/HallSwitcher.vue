@@ -16,7 +16,7 @@ const emit = defineEmits<{
 const held = ref(false);
 const dragging = ref(false);
 const previewHall = ref<Hall>();
-const holdDuration = 350;
+const holdDuration = 300;
 const moveThreshold = 8;
 let pointerId: number | undefined;
 let startX = 0;
@@ -199,7 +199,7 @@ onUnmounted(() => {
       v-for="name in halls"
       :key="name"
       :value="name"
-      :class="{ 'is-held': held && !dragging && name === modelValue }"
+      :class="{ 'is-held': held && name === (previewHall ?? modelValue) }"
       @pointerdown="handlePointerDown($event, name)"
       @pointermove="handlePointerMove"
       @pointerup="handlePointerUp"
@@ -213,33 +213,80 @@ onUnmounted(() => {
 
 <style scoped>
 .hall-switcher {
+  --active-x: 0;
+  --held-scale: 1;
+
+  position: relative;
   display: flex;
   padding: 5px;
   gap: 2px;
   border-radius: var(--radius-pill);
 }
 
+.hall-switcher:has(> button.is-held) {
+  --held-scale: 1.13;
+}
+
+.hall-switcher:has(> button:nth-of-type(2)[data-state="on"]) {
+  --active-x: calc(100% + 2px);
+}
+
+.hall-switcher:has(> button:nth-of-type(3)[data-state="on"]) {
+  --active-x: calc(200% + 4px);
+}
+
+.hall-switcher:has(> button:nth-of-type(4)[data-state="on"]) {
+  --active-x: calc(300% + 6px);
+}
+
+.hall-switcher:has(> button:nth-of-type(5)[data-state="on"]) {
+  --active-x: calc(400% + 8px);
+}
+
+.hall-switcher::before {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc((100% - 18px) / 5);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  box-shadow: none;
+  content: "";
+  pointer-events: none;
+  translate: var(--active-x) 0;
+  scale: var(--held-scale);
+  transition:
+    translate var(--duration-normal) ease-out,
+    scale var(--duration-fast),
+    box-shadow var(--duration-fast);
+}
+
+.hall-switcher:has(> button.is-held)::before {
+  box-shadow: var(--shadow-floating);
+}
+
 .hall-switcher button {
+  position: relative;
+  z-index: 1;
   flex: 1;
   min-height: 42px;
   border-radius: var(--radius-pill);
   background: transparent;
   font-weight: 650;
   font-size: 13px;
-  transition: transform var(--duration-fast);
+  transition:
+    transform var(--duration-fast),
+    color var(--duration-normal);
   user-select: none;
 }
 
 .hall-switcher button[data-state="on"] {
   color: var(--color-on-primary);
-  background: var(--color-primary);
   touch-action: none;
 }
 
 .hall-switcher button.is-held {
-  position: relative;
-  z-index: 1;
   transform: scale(1.13);
-  box-shadow: var(--shadow-floating);
 }
 </style>
