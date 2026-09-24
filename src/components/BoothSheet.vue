@@ -486,15 +486,18 @@ onUnmounted(() => {
 }
 
 .booth-slot {
-  flex: 0 0 26px;
+  flex: 0 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
-  border: 1px solid var(--color-border);
+  height: 18px;
+  margin-top: calc((13px * 1.6 - 18px) / 2);
   border-radius: 5px;
   background: #fff;
-  color: #30271d;
+  box-shadow: 0 1px 2px rgb(60 39 15 / 7%);
+  color: var(--color-muted);
   font-size: 11px;
-  line-height: 1.5;
-  text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
