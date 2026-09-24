@@ -493,11 +493,13 @@ onUnmounted(() => {
   box-sizing: border-box;
   height: 18px;
   margin-top: calc((13px * 1.6 - 18px) / 2);
-  border-radius: 5px;
+  border-radius: 6px;
   background: #fff;
-  box-shadow: 0 1px 2px rgb(60 39 15 / 7%);
-  color: var(--color-muted);
+  border: 0.5px solid rgb(0 0 0 / 20%);
+  color: var(--color-text);
+  opacity: 0.8;
   font-size: 11px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
