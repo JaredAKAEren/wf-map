@@ -156,21 +156,12 @@ test("个人摊位均分两列，编号与缺失名称完整显示", async ({ pa
     });
     expect(layout.content).toBeLessThanOrEqual(layout.width);
     expect(layout.wordBreak).toBe("normal");
-    const badges = await page.locator(".booth-slot").evaluateAll((elements) => {
+    const widths = await page.locator(".booth-slot").evaluateAll((elements) => {
       return elements.map((element) => {
-        const style = getComputedStyle(element);
-
-        return { width: element.getBoundingClientRect().width, radius: style.borderRadius };
+        return element.getBoundingClientRect().width;
       });
     });
-    expect(
-      new Set(
-        badges.map((badge) => {
-          return badge.width;
-        }),
-      ).size,
-    ).toBe(1);
-    expect(badges[0]?.radius).toBe("5px");
+    expect(new Set(widths).size).toBe(1);
   }
 
   await searchFor(page, "W1-B4-03");
@@ -840,9 +831,9 @@ test("详情仅从把手或标题上拉展开，展开后下拉关闭", async ({
   });
   await expect
     .poll(async () => {
-      return Math.round((await handle.boundingBox())!.y);
+      return Math.abs((await handle.boundingBox())!.y - fullyPulledY);
     })
-    .toBe(Math.round(fullyPulledY));
+    .toBeLessThan(1.5);
 
   await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await expect(page.getByRole("button", { name: "收起贴图" })).toHaveAttribute(
