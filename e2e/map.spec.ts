@@ -453,12 +453,17 @@ test("当前馆长按有反馈，拖动时地图跟手并在松开后吸附", as
     return {
       width: button.getBoundingClientRect().width,
       background: background.backgroundColor,
-      pillWidth: Number.parseFloat(background.width),
     };
   });
   expect(heldVisual.width).toBeGreaterThan(w5Box.width);
   expect(heldVisual.background).toBe("rgb(244, 152, 15)");
-  expect(Math.abs(heldVisual.pillWidth - w5Box.width)).toBeLessThan(2);
+  await expect
+    .poll(async () => {
+      return switcher.evaluate((element) => {
+        return Number.parseFloat(getComputedStyle(element, "::before").width);
+      });
+    })
+    .toBeGreaterThan(w5Box.width + 5);
   await page.mouse.up();
   await expect(w5).not.toHaveClass(/is-held/);
   expect(await viewOf(page)).toEqual(initial);
@@ -529,7 +534,7 @@ test("轻点切馆的高亮底色滑动到目标按钮", async ({ page }) => {
       if (
         event instanceof TransitionEvent &&
         event.pseudoElement === "::before" &&
-        event.propertyName === "translate"
+        event.propertyName === "left"
       ) {
         element.setAttribute("data-pill-animated", "true");
       }

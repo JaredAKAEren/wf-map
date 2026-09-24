@@ -212,9 +212,15 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+@property --hall-gradient-opacity {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
 .hall-switcher {
-  --active-x: 0;
-  --held-scale: 1;
+  --active-left: 5px;
+  --held-grow: 0px;
 
   position: relative;
   display: flex;
@@ -224,46 +230,64 @@ onUnmounted(() => {
 }
 
 .hall-switcher:has(> button.is-held) {
-  --held-scale: 1.13;
+  /* 四边等距扩张，使两端圆弧与外层留边同心。 */
+  --held-grow: 3px;
 }
 
 .hall-switcher:has(> button:nth-of-type(2)[data-state="on"]) {
-  --active-x: calc(100% + 2px);
+  --active-left: calc(7px + (100% - 18px) / 5);
 }
 
 .hall-switcher:has(> button:nth-of-type(3)[data-state="on"]) {
-  --active-x: calc(200% + 4px);
+  --active-left: calc(9px + (200% - 36px) / 5);
 }
 
 .hall-switcher:has(> button:nth-of-type(4)[data-state="on"]) {
-  --active-x: calc(300% + 6px);
+  --active-left: calc(11px + (300% - 54px) / 5);
 }
 
 .hall-switcher:has(> button:nth-of-type(5)[data-state="on"]) {
-  --active-x: calc(400% + 8px);
+  --active-left: calc(13px + (400% - 72px) / 5);
 }
 
 .hall-switcher::before {
+  --hall-gradient-opacity: 0%;
+
   position: absolute;
-  top: 5px;
-  bottom: 5px;
-  left: 5px;
-  width: calc((100% - 18px) / 5);
+  top: calc(5px - var(--held-grow));
+  bottom: calc(5px - var(--held-grow));
+  left: var(--active-left);
+  width: calc((100% - 18px) / 5 + var(--held-grow) + var(--held-grow));
   border-radius: var(--radius-pill);
-  background: var(--color-primary);
+  background:
+    linear-gradient(
+      135deg,
+      rgb(248 178 74 / var(--hall-gradient-opacity)) 0%,
+      rgb(243 160 44 / var(--hall-gradient-opacity)) 48%,
+      rgb(237 146 28 / var(--hall-gradient-opacity)) 100%
+    ),
+    var(--color-primary);
   box-shadow: none;
   content: "";
   pointer-events: none;
-  translate: var(--active-x) 0;
-  scale: var(--held-scale);
+  translate: calc(0px - var(--held-grow)) 0;
   transition:
-    translate var(--duration-normal) ease-out,
-    scale var(--duration-fast),
+    left var(--duration-normal) ease-out,
+    top var(--duration-fast),
+    bottom var(--duration-fast),
+    width var(--duration-fast),
+    translate var(--duration-fast),
+    --hall-gradient-opacity var(--duration-fast),
     box-shadow var(--duration-fast);
 }
 
 .hall-switcher:has(> button.is-held)::before {
-  box-shadow: var(--shadow-floating);
+  --hall-gradient-opacity: 100%;
+
+  box-shadow:
+    0 3px 5px rgb(151 81 0 / 10%),
+    0 11px 24px rgb(213 119 7 / 20%),
+    0 20px 38px rgb(244 151 31 / 11%);
 }
 
 .hall-switcher button {

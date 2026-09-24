@@ -382,6 +382,7 @@ onUnmounted(() => {
       </p>
     </Transition>
     <HallSwitcher
+      v-if="ready"
       class="hall-position"
       :model-value="hall"
       :halls="halls"
