@@ -557,12 +557,13 @@ test("快速长按滑动与取消恢复原视野，普通切馆仍可点击", as
       return (await viewOf(page))[0];
     })
     .toBe(3490);
-  await page.getByRole("button", { name: "放大地图" }).click();
+  await page.locator("svg.map").hover({ position: { x: 180, y: 400 } });
+  await page.mouse.wheel(0, -100);
   await expect
     .poll(async () => {
       return (await viewOf(page))[2];
     })
-    .toBe(525);
+    .toBe(609);
   const original = await viewOf(page);
   const session = await page.context().newCDPSession(page);
   await session.send("Input.dispatchTouchEvent", {
@@ -692,17 +693,18 @@ test("双指缩放与取消不误选，动画可被拖动接管", async ({ page,
   await expect(page.getByRole("dialog", { name: "展位详情" })).toHaveCount(0);
 });
 
-test("图标按钮的图形位于按钮正中心", async ({ page }) => {
+test("不显示地图缩放按钮，搜索图标位于按钮正中心", async ({ page }) => {
   await page.goto("/");
-  for (const name of ["搜索展商或展位", "放大地图", "缩小地图"]) {
-    const button = page.getByRole("button", { name, exact: true });
-    const icon = button.locator("svg");
-    await expect(icon).toHaveCount(1);
-    const box = (await button.boundingBox())!;
-    const graphic = (await icon.boundingBox())!;
-    expect(Math.abs(box.x + box.width / 2 - graphic.x - graphic.width / 2)).toBeLessThan(1);
-    expect(Math.abs(box.y + box.height / 2 - graphic.y - graphic.height / 2)).toBeLessThan(1);
-  }
+  await expect(page.getByRole("button", { name: "放大地图" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "缩小地图" })).toHaveCount(0);
+
+  const button = page.getByRole("button", { name: "搜索展商或展位", exact: true });
+  const icon = button.locator("svg");
+  await expect(icon).toHaveCount(1);
+  const box = (await button.boundingBox())!;
+  const graphic = (await icon.boundingBox())!;
+  expect(Math.abs(box.x + box.width / 2 - graphic.x - graphic.width / 2)).toBeLessThan(1);
+  expect(Math.abs(box.y + box.height / 2 - graphic.y - graphic.height / 2)).toBeLessThan(1);
 });
 
 test("点地图空白处关闭搜索与详情，拖动地图不误关闭", async ({ page }) => {

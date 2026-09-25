@@ -64,12 +64,9 @@ function selectAt(point: Point) {
   }
 }
 
-const { view, viewBox, moveTo, setView, zoom, down, move, up, cancel, wheel } = useMapViewport(
-  map,
-  {
-    onSelect: selectAt,
-  },
-);
+const { view, viewBox, moveTo, setView, down, move, up, cancel, wheel } = useMapViewport(map, {
+  onSelect: selectAt,
+});
 
 function hallView(name: Hall): View {
   return { x: offset(name) + 50, y: 160, width: 700, height: 1260 };
@@ -365,14 +362,6 @@ onUnmounted(() => {
         @open="searchOpen = $event"
       />
     </header>
-    <div class="map-controls ui-surface">
-      <button class="ui-icon-button" aria-label="放大地图" @click="zoom(0.75)">
-        <AppIcon class="control-icon" name="plus" />
-      </button>
-      <button class="ui-icon-button" aria-label="缩小地图" @click="zoom(1.33)">
-        <AppIcon class="control-icon" name="minus" />
-      </button>
-    </div>
     <Transition name="float">
       <p v-if="notice" class="toast ui-surface" role="status">
         {{ notice
@@ -432,27 +421,6 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-}
-
-.map-controls {
-  position: absolute;
-  right: var(--screen-padding);
-  top: 38%;
-  display: flex;
-  flex-direction: column;
-  padding: 3px;
-  border-radius: var(--radius-pill);
-}
-
-.map-controls button {
-  width: 36px;
-  height: 38px;
-  background: transparent;
-}
-
-.control-icon {
-  width: 20px;
-  height: 20px;
 }
 
 .hall-position {
