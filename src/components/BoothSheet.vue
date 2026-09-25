@@ -9,7 +9,7 @@ import {
   DrawerRoot,
   DrawerTitle,
 } from "reka-ui";
-import { nextTick, ref, shallowRef, watch } from "vue";
+import { nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
 
 import type { Booth } from "../data/exhibition";
 import PhotoPanel from "./PhotoPanel.vue";
@@ -23,6 +23,7 @@ const expanded = ref(false);
 const gestureDragging = ref(false);
 const gestureExpanded = ref(false);
 const gestureY = ref(0);
+const gesturePhotoHeight = ref<number>();
 const expandSwipeThreshold = 48;
 const closeSwipeThreshold = 40;
 const reverseCancelThreshold = 10;
@@ -42,11 +43,21 @@ let dismissCancelled = false;
 let maxDownwardDistance = 0;
 let lastDragSample: { time: number; y: number } | undefined;
 let lastVelocityY = 0;
+let gestureResizeObserver: ResizeObserver | undefined;
+let revealCleanupTimer: ReturnType<typeof setTimeout> | undefined;
+let gestureVersion = 0;
 
 function personalEntries(booth: Booth) {
   return booth.entries.filter((entry) => {
-    return entry.slot && entry.names.length;
+    return entry.slot;
   });
+}
+
+function personalColumns(booth: Booth) {
+  const entries = personalEntries(booth);
+  const midpoint = Math.floor(entries.length / 2);
+
+  return entries.length === 1 ? [entries] : [entries.slice(0, midpoint), entries.slice(midpoint)];
 }
 
 function boothNames(booth: Booth) {
@@ -79,8 +90,23 @@ function startExpandGesture(clientY: number, target: EventTarget | null) {
   maxDownwardDistance = 0;
   lastDragSample = undefined;
   lastVelocityY = 0;
+  gestureResizeObserver?.disconnect();
+  clearTimeout(revealCleanupTimer);
+  gesturePhotoHeight.value = undefined;
+  gestureVersion++;
 
   return true;
+}
+
+function syncExpandedGesture() {
+  if (!sheetElement || !gestureDragging.value) {
+    return;
+  }
+
+  const upwardDistance = Math.max(0, gestureStartY - gestureCurrentY);
+  const currentGrowth = Math.max(0, sheetElement.getBoundingClientRect().height - collapsedHeight);
+
+  gestureY.value = currentGrowth - Math.min(upwardDistance, expandedGrowth);
 }
 
 async function expandDuringGesture() {
@@ -89,7 +115,9 @@ async function expandDuringGesture() {
   }
 
   expansionPending = true;
+  const version = gestureVersion;
   gestureExpanded.value = true;
+  gesturePhotoHeight.value = 0;
   expanded.value = true;
   await nextTick();
   await new Promise<void>((resolve) => {
@@ -97,15 +125,39 @@ async function expandDuringGesture() {
       resolve();
     });
   });
+  if (version !== gestureVersion) {
+    return;
+  }
   if (!sheetElement) {
     expansionPending = false;
+    gesturePhotoHeight.value = undefined;
     return;
   }
 
-  expandedGrowth = Math.max(0, sheetElement.getBoundingClientRect().height - collapsedHeight);
+  const reveal = sheetElement.querySelector<HTMLElement>(".photo-reveal");
+  const contentHeight = reveal?.scrollHeight ?? 0;
+  const maxHeight = Number.parseFloat(getComputedStyle(sheetElement).maxHeight);
+  expandedGrowth = Math.min(contentHeight, Math.max(0, maxHeight - collapsedHeight));
   expandedDuringGesture = true;
   expansionPending = false;
-  updateExpandGesture(gestureCurrentY, performance.now());
+  gestureResizeObserver = new ResizeObserver(syncExpandedGesture);
+  gestureResizeObserver.observe(sheetElement);
+  syncExpandedGesture();
+  requestAnimationFrame(() => {
+    if (version !== gestureVersion) {
+      return;
+    }
+
+    gesturePhotoHeight.value = contentHeight;
+    revealCleanupTimer = setTimeout(() => {
+      if (version === gestureVersion) {
+        gesturePhotoHeight.value = undefined;
+      }
+    }, 300);
+  });
+  if (!gestureDragging.value) {
+    sheetElement = undefined;
+  }
 }
 
 function recordDragSample(clientY: number, time: number) {
@@ -148,8 +200,8 @@ function updateExpandGesture(clientY: number, time: number) {
     return;
   }
 
-  // 展开前后保持卡片顶部连续，新增内容先向下出现，再随继续上拉回到最终位置。
-  gestureY.value = Math.max(0, expandedGrowth - upwardDistance);
+  // 内容高度过渡时，用实时高度补偿卡片位移，维持手指对应的顶部位置。
+  syncExpandedGesture();
 }
 
 function finishExpandGesture() {
@@ -161,7 +213,10 @@ function finishExpandGesture() {
     !dismissCancelled &&
     (downwardDistance >= closeSwipeThreshold || releaseVelocity > releaseVelocityThreshold);
   gestureDragging.value = false;
-  sheetElement = undefined;
+  gestureResizeObserver?.disconnect();
+  if (!expansionPending) {
+    sheetElement = undefined;
+  }
   if (shouldClose) {
     emit("close");
   } else {
@@ -221,6 +276,10 @@ watch(
       gestureY.value = 0;
       pointerId = undefined;
       sheetElement = undefined;
+      gesturePhotoHeight.value = undefined;
+      gestureResizeObserver?.disconnect();
+      clearTimeout(revealCleanupTimer);
+      gestureVersion++;
     }
   },
 );
@@ -229,6 +288,12 @@ watch(expanded, (open) => {
   if (!open) {
     gestureExpanded.value = false;
   }
+});
+
+onUnmounted(() => {
+  gestureResizeObserver?.disconnect();
+  clearTimeout(revealCleanupTimer);
+  gestureVersion++;
 });
 </script>
 
@@ -262,15 +327,25 @@ watch(expanded, (open) => {
               <span>{{ displayed.hall }}馆</span>
             </div>
           </div>
-          <DrawerDescription class="booth-names" @pointerdown.stop @touchstart.stop>
+          <DrawerDescription as="div" class="booth-names" @pointerdown.stop @touchstart.stop>
             <template v-if="personalEntries(displayed).length">
-              <span
-                v-for="entry in personalEntries(displayed)"
-                :key="entry.slot"
-                class="booth-entry"
+              <div
+                class="personal-entries"
+                :class="{ 'is-single': personalEntries(displayed).length === 1 }"
               >
-                {{ entry.slot }}-{{ entry.names.join(" / ") }}
-              </span>
+                <div
+                  v-for="(column, index) in personalColumns(displayed)"
+                  :key="index"
+                  class="personal-column"
+                >
+                  <div v-for="entry in column" :key="entry.slot" class="booth-entry">
+                    <span class="booth-slot">{{ entry.slot }}</span>
+                    <span class="booth-entry-name">{{
+                      entry.names.join(" / ") || "名称待补充"
+                    }}</span>
+                  </div>
+                </div>
+              </div>
             </template>
             <template v-else>
               {{ boothNames(displayed).join(" / ") || "名称待补充 · 可按编号定位" }}
@@ -283,6 +358,10 @@ watch(expanded, (open) => {
             </CollapsibleTrigger>
             <CollapsibleContent
               class="photo-reveal"
+              :class="{ 'is-gesture-reveal': gesturePhotoHeight !== undefined }"
+              :style="
+                gesturePhotoHeight === undefined ? undefined : { height: `${gesturePhotoHeight}px` }
+              "
               :inert="!expanded"
               @pointerdown.stop
               @touchstart.stop
@@ -385,7 +464,49 @@ watch(expanded, (open) => {
 }
 
 .booth-entry {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  margin-bottom: 4px;
+}
+
+.personal-entries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.personal-entries.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.personal-column {
+  min-width: 0;
+}
+
+.booth-slot {
+  flex: 0 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 18px;
+  margin-top: calc((13px * 1.6 - 18px) / 2);
+  border-radius: 6px;
+  background: #fff;
+  border: 0.5px solid rgb(0 0 0 / 20%);
+  color: var(--color-text);
+  opacity: 0.8;
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.booth-entry-name {
+  min-width: 0;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .details-link {
@@ -422,6 +543,10 @@ watch(expanded, (open) => {
 .booth-sheet.is-gesture-dragging .photo-reveal,
 .booth-sheet.is-gesture-expanded .photo-reveal {
   animation: none;
+}
+
+.photo-reveal.is-gesture-reveal {
+  transition: height var(--duration-normal) ease-out;
 }
 
 @keyframes reveal {

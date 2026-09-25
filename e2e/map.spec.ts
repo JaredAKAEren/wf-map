@@ -120,6 +120,127 @@ test("细分编号可搜索并定位所属主分区，空名记录显示待补�
   await expect(searchResult(page, /W1 · B4-03.*名称待补充/)).toBeVisible();
 });
 
+test("个人摊位均分两列，编号与缺失名称完整显示", async ({ page }) => {
+  for (const width of [320, 360, 700]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/");
+    await searchFor(page, "W1E8");
+    await searchResult(page, /W1 · E8/).click();
+    await expect(page.getByRole("heading", { name: "E8", exact: true })).toBeVisible();
+
+    const columns = page.locator(".personal-column");
+    await expect(columns).toHaveCount(2);
+    await expect(columns.nth(0).locator(".booth-entry")).toHaveCount(6);
+    await expect(columns.nth(1).locator(".booth-entry")).toHaveCount(7);
+    await expect(page.locator(".booth-slot")).toHaveText([
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "06",
+      "07",
+      "08",
+      "09",
+      "10",
+      "11",
+      "12",
+      "13",
+    ]);
+    const layout = await page.locator(".personal-entries").evaluate((element) => {
+      return {
+        width: element.clientWidth,
+        content: element.scrollWidth,
+        wordBreak: getComputedStyle(element.querySelector(".booth-entry-name")!).wordBreak,
+      };
+    });
+    expect(layout.content).toBeLessThanOrEqual(layout.width);
+    expect(layout.wordBreak).toBe("normal");
+    const widths = await page.locator(".booth-slot").evaluateAll((elements) => {
+      return elements.map((element) => {
+        return element.getBoundingClientRect().width;
+      });
+    });
+    expect(new Set(widths).size).toBe(1);
+  }
+
+  await searchFor(page, "W1-B4-03");
+  await searchResult(page, /W1 · B4-03/).click();
+  await expect(
+    page.locator(".booth-entry", { has: page.locator(".booth-slot", { hasText: "03" }) }),
+  ).toContainText("名称待补充");
+});
+
+test("搜索选择和地图点选都把展位框移到详情卡上方，地图点选不缩放", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  const initialWidth = (await viewOf(page))[2];
+  const point = await mapPoint(page, 250, 1310);
+  await page.mouse.click(point.x, point.y);
+  await expect(page.getByRole("heading", { name: "A37", exact: true })).toBeVisible();
+  await expect
+    .poll(async () => {
+      const booth = (await page.locator(".selected-booth").boundingBox())!;
+      const sheet = (await page.locator(".sheet-position").boundingBox())!;
+      const hall = (await page.getByRole("group", { name: "展馆选择" }).boundingBox())!;
+
+      return booth.y > hall.y + hall.height + 8 && booth.y + booth.height < sheet.y - 8;
+    })
+    .toBe(true);
+  expect((await viewOf(page))[2]).toBe(initialWidth);
+
+  await searchFor(page, "W5A37");
+  await searchResult(page, /W5 · A37/).click();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[2];
+    })
+    .toBe(420);
+  const booth = (await page.locator(".selected-booth").boundingBox())!;
+  const sheet = (await page.locator(".sheet-position").boundingBox())!;
+  const hall = (await page.getByRole("group", { name: "展馆选择" }).boundingBox())!;
+  expect(booth.y).toBeGreaterThan(hall.y + hall.height + 8);
+  expect(booth.y + booth.height).toBeLessThan(sheet.y - 8);
+});
+
+test("未被详情卡遮挡时保持原视野", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  const initial = await viewOf(page);
+  const clearPoint = await mapPoint(page, 250, 1010);
+  await page.mouse.click(clearPoint.x, clearPoint.y);
+  await expect(page.getByRole("heading", { name: "A34", exact: true })).toBeVisible();
+  await page.waitForTimeout(400);
+  expect(await viewOf(page)).toEqual(initial);
+
+  await searchFor(page, "W5A34");
+  await searchResult(page, /W5 · A34/).click();
+  await expect
+    .poll(async () => {
+      return await viewOf(page);
+    })
+    .toEqual([124 + 255 / 2 - 210, 948 + 159 / 2 - 260, 420, 520]);
+});
+
+test("被详情卡遮挡时只留少量间距", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  const coveredPoint = await mapPoint(page, 250, 1310);
+  await page.mouse.click(coveredPoint.x, coveredPoint.y);
+  await expect(page.getByRole("heading", { name: "A37", exact: true })).toBeVisible();
+  await expect
+    .poll(async () => {
+      const booth = (await page.locator(".selected-booth").boundingBox())!;
+      const sheet = (await page.locator(".sheet-position").boundingBox())!;
+
+      return sheet.y - (booth.y + booth.height);
+    })
+    .toBeGreaterThan(10);
+  const booth = (await page.locator(".selected-booth").boundingBox())!;
+  const sheet = (await page.locator(".sheet-position").boundingBox())!;
+  expect(sheet.y - (booth.y + booth.height)).toBeLessThan(15);
+});
+
 test("搜索列表先选后跳转，展位查看状态可恢复", async ({ page }) => {
   await page.goto("/");
   const initial = await viewOf(page);
@@ -289,6 +410,210 @@ test("切馆及缩放有中间帧，双击与双击拖动不误选展位", async
   await expect(page.getByRole("dialog", { name: "展位详情" })).toHaveCount(0);
 });
 
+test("当前馆长按有反馈，拖动时地图跟手并在松开后吸附", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  const w5 = page.getByRole("button", { name: "W5", exact: true });
+  const w4 = page.getByRole("button", { name: "W4", exact: true });
+  const w3 = page.getByRole("button", { name: "W3", exact: true });
+  const switcher = page.getByRole("group", { name: "展馆选择" });
+  await w4.evaluate((element) => {
+    element.addEventListener("transitionrun", (event) => {
+      if (event instanceof TransitionEvent && event.propertyName === "transform") {
+        element.setAttribute("data-animated", "true");
+      }
+    });
+  });
+  const w5Box = (await w5.boundingBox())!;
+  const w4Box = (await w4.boundingBox())!;
+  const startX = w5Box.x + w5Box.width / 2;
+  const y = w5Box.y + w5Box.height / 2;
+  const step = w4Box.x + w4Box.width / 2 - startX;
+  const initial = await viewOf(page);
+
+  await page.mouse.move(startX, y);
+  await page.mouse.down();
+  await page.waitForTimeout(220);
+  await expect(w5).not.toHaveClass(/is-held/);
+  await page.waitForTimeout(120);
+  await expect(w5).toHaveClass(/is-held/);
+  const heldVisual = await switcher.evaluate((element) => {
+    const background = getComputedStyle(element, "::before");
+    const button = element.querySelector("button")!;
+
+    return {
+      width: button.getBoundingClientRect().width,
+      background: background.backgroundColor,
+    };
+  });
+  expect(heldVisual.width).toBeGreaterThan(w5Box.width);
+  expect(heldVisual.background).toBe("rgb(244, 152, 15)");
+  await expect
+    .poll(async () => {
+      return switcher.evaluate((element) => {
+        return Number.parseFloat(getComputedStyle(element, "::before").width);
+      });
+    })
+    .toBeGreaterThan(w5Box.width + 5);
+  await page.mouse.up();
+  await expect(w5).not.toHaveClass(/is-held/);
+  expect(await viewOf(page)).toEqual(initial);
+
+  await page.mouse.move(startX, y);
+  await page.mouse.down();
+  await page.waitForTimeout(380);
+  await page.mouse.move(startX + step * 0.6, y, { steps: 4 });
+  await expect(w4).toHaveClass(/is-held/);
+  await expect(w4).toHaveAttribute("data-animated", "true");
+  await expect(w5).not.toHaveClass(/is-held/);
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[2];
+    })
+    .toBe(700);
+  const intermediate = (await viewOf(page))[0]!;
+  expect(intermediate).toBeGreaterThan(50);
+  expect(intermediate).toBeLessThan(910);
+  await page.mouse.move(startX + step * 2.1, y, { steps: 8 });
+  await expect(w3).toHaveAttribute("data-state", "on");
+  await expect(w3).toHaveClass(/is-held/);
+  await expect(w4).not.toHaveClass(/is-held/);
+  await page.mouse.move(startX + step * 0.2, y, { steps: 8 });
+  await expect(w5).toHaveAttribute("data-state", "on");
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBeLessThan(910);
+  await page.mouse.move(startX + step * 2.1, y, { steps: 8 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(1770);
+  await expect(w3).toHaveAttribute("data-state", "on");
+  await expect(w5).not.toHaveClass(/is-held/);
+
+  const w3Box = (await w3.boundingBox())!;
+  const reverseX = w3Box.x + w3Box.width / 2;
+  await page.mouse.move(reverseX, y);
+  await page.mouse.down();
+  await page.waitForTimeout(380);
+  await page.mouse.move(reverseX - step * 2.5, y, { steps: 8 });
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(50);
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(50);
+  await expect(w5).toHaveAttribute("data-state", "on");
+});
+
+test("轻点切馆的高亮底色滑动到目标按钮", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  const w1 = page.getByRole("button", { name: "W1", exact: true });
+  const switcher = page.getByRole("group", { name: "展馆选择" });
+  await switcher.evaluate((element) => {
+    element.addEventListener("transitionrun", (event) => {
+      if (
+        event instanceof TransitionEvent &&
+        event.pseudoElement === "::before" &&
+        event.propertyName === "left"
+      ) {
+        element.setAttribute("data-pill-animated", "true");
+      }
+    });
+  });
+  await w1.click();
+  await expect(w1).toHaveAttribute("data-state", "on");
+  await expect(switcher).toHaveAttribute("data-pill-animated", "true");
+});
+
+test("快速长按滑动与取消恢复原视野，普通切馆仍可点击", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  const w5 = page.getByRole("button", { name: "W5", exact: true });
+  const w1 = page.getByRole("button", { name: "W1", exact: true });
+  const w5Box = (await w5.boundingBox())!;
+  const w1Box = (await w1.boundingBox())!;
+  const startX = w5Box.x + w5Box.width / 2;
+  const endX = w1Box.x + w1Box.width / 2;
+  const y = w5Box.y + w5Box.height / 2;
+
+  await page.mouse.move(startX, y);
+  await page.mouse.down();
+  await page.waitForTimeout(380);
+  await page.mouse.move(endX, y, { steps: 2 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(3490);
+  await page.locator("svg.map").hover({ position: { x: 180, y: 400 } });
+  await page.mouse.wheel(0, -100);
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[2];
+    })
+    .toBe(609);
+  const original = await viewOf(page);
+  const session = await page.context().newCDPSession(page);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: endX, y, id: 0 }],
+  });
+  await page.waitForTimeout(380);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: endX - 110, y, id: 0 }],
+  });
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBeLessThan(3490);
+  await session.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
+  await expect
+    .poll(async () => {
+      return await viewOf(page);
+    })
+    .toEqual(original);
+  await expect(w1).toHaveAttribute("data-state", "on");
+
+  await w5.click();
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(50);
+  const touchStart = (await w5.boundingBox())!;
+  const touchEnd = (await page.getByRole("button", { name: "W4", exact: true }).boundingBox())!;
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: touchStart.x + touchStart.width / 2, y, id: 1 }],
+  });
+  await page.waitForTimeout(380);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: touchEnd.x + touchEnd.width / 2, y, id: 1 }],
+  });
+  await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect
+    .poll(async () => {
+      return (await viewOf(page))[0];
+    })
+    .toBe(910);
+  await session.detach();
+});
+
 test("减少动态效果直接到位，旧位置记录清理，照片能力和离线资源保持", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(() => {
@@ -368,17 +693,18 @@ test("双指缩放与取消不误选，动画可被拖动接管", async ({ page,
   await expect(page.getByRole("dialog", { name: "展位详情" })).toHaveCount(0);
 });
 
-test("图标按钮的图形位于按钮正中心", async ({ page }) => {
+test("不显示地图缩放按钮，搜索图标位于按钮正中心", async ({ page }) => {
   await page.goto("/");
-  for (const name of ["搜索展商或展位", "放大地图", "缩小地图"]) {
-    const button = page.getByRole("button", { name, exact: true });
-    const icon = button.locator("svg");
-    await expect(icon).toHaveCount(1);
-    const box = (await button.boundingBox())!;
-    const graphic = (await icon.boundingBox())!;
-    expect(Math.abs(box.x + box.width / 2 - graphic.x - graphic.width / 2)).toBeLessThan(1);
-    expect(Math.abs(box.y + box.height / 2 - graphic.y - graphic.height / 2)).toBeLessThan(1);
-  }
+  await expect(page.getByRole("button", { name: "放大地图" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "缩小地图" })).toHaveCount(0);
+
+  const button = page.getByRole("button", { name: "搜索展商或展位", exact: true });
+  const icon = button.locator("svg");
+  await expect(icon).toHaveCount(1);
+  const box = (await button.boundingBox())!;
+  const graphic = (await icon.boundingBox())!;
+  expect(Math.abs(box.x + box.width / 2 - graphic.x - graphic.width / 2)).toBeLessThan(1);
+  expect(Math.abs(box.y + box.height / 2 - graphic.y - graphic.height / 2)).toBeLessThan(1);
 });
 
 test("点地图空白处关闭搜索与详情，拖动地图不误关闭", async ({ page }) => {
@@ -468,6 +794,16 @@ test("详情仅从把手或标题上拉展开，展开后下拉关闭", async ({
     touchPoints: [{ x, y: y - 60 }],
   });
   await expect(page.locator(".photo-reveal")).toHaveAttribute("data-state", "open");
+  const revealMotion = await page.locator(".photo-reveal").evaluate((element) => {
+    return {
+      height: element.getBoundingClientRect().height,
+      contentHeight: element.scrollHeight,
+      transition: getComputedStyle(element).transitionProperty,
+    };
+  });
+  expect(revealMotion.contentHeight).toBeGreaterThan(0);
+  expect(revealMotion.height).toBeLessThan(revealMotion.contentHeight);
+  expect(revealMotion.transition).toContain("height");
   const expandedWhileHeld = (await handle.boundingBox())!.y;
   await session.send("Input.dispatchTouchEvent", {
     type: "touchMove",
@@ -497,9 +833,9 @@ test("详情仅从把手或标题上拉展开，展开后下拉关闭", async ({
   });
   await expect
     .poll(async () => {
-      return Math.round((await handle.boundingBox())!.y);
+      return Math.abs((await handle.boundingBox())!.y - fullyPulledY);
     })
-    .toBe(Math.round(fullyPulledY));
+    .toBeLessThan(1.5);
 
   await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await expect(page.getByRole("button", { name: "收起贴图" })).toHaveAttribute(

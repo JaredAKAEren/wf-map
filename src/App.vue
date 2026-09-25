@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Preferences } from "@capacitor/preferences";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 import BoothSheet from "./components/BoothSheet.vue";
 import MapSearch from "./components/MapSearch.vue";
@@ -10,6 +10,15 @@ import { useMapViewport } from "./composables/useMapViewport";
 import { booths, halls, isHall, type Booth, type Hall } from "./data/exhibition";
 import type { Point, View } from "./domain/viewport";
 
+type HallScrub = {
+  originHall: Hall;
+  originalView: View;
+  originalSelection: string;
+  startedAt: number;
+  steps: number;
+  frame: number;
+};
+
 const map = ref<SVGSVGElement>();
 const search = ref<InstanceType<typeof MapSearch>>();
 const selectedId = ref("");
@@ -18,6 +27,8 @@ const notice = ref("");
 const searchOpen = ref(false);
 const ready = ref(false);
 const pageHeight = ref("100dvh");
+let selectionVersion = 0;
+let hallScrub: HallScrub | undefined;
 const selected = computed(() => {
   return booths.find((booth) => {
     return booth.id === selectedId.value;
@@ -41,35 +52,175 @@ function boothAt(point: Point) {
 
 function selectAt(point: Point) {
   const booth = boothAt(point);
+
   void search.value?.close(false);
   selectedId.value = booth?.id ?? "";
   notice.value = "";
+  selectionVersion++;
+
+  if (booth) {
+    hall.value = booth.hall;
+    void revealBooth(booth, { ...view.value }, selectionVersion);
+  }
 }
 
-const { view, viewBox, moveTo, zoom, down, move, up, cancel, wheel } = useMapViewport(map, {
+const { view, viewBox, moveTo, setView, down, move, up, cancel, wheel } = useMapViewport(map, {
   onSelect: selectAt,
 });
 
-function focusHall(name: Hall) {
-  hall.value = name;
-  selectedId.value = "";
-  moveTo({ x: offset(name) + 50, y: 160, width: 700, height: 1260 });
+function hallView(name: Hall): View {
+  return { x: offset(name) + 50, y: 160, width: 700, height: 1260 };
 }
 
-function focus(booth: Booth) {
-  hall.value = booth.hall;
-  moveTo({
+function focusHall(name: Hall) {
+  if (hallScrub) {
+    cancelAnimationFrame(hallScrub.frame);
+    hallScrub = undefined;
+  }
+
+  selectionVersion++;
+  hall.value = name;
+  selectedId.value = "";
+  moveTo(hallView(name));
+}
+
+function boothView(booth: Booth): View {
+  return {
     x: offset(booth.hall) + booth.x + booth.width / 2 - 210,
     y: booth.y + booth.height / 2 - 260,
     width: 420,
     height: 520,
+  };
+}
+
+async function revealBooth(booth: Booth, base: View, version: number) {
+  await nextTick();
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
   });
+  if (version !== selectionVersion || selectedId.value !== booth.id || searchOpen.value) {
+    return;
+  }
+
+  const mapRect = map.value?.getBoundingClientRect();
+  const sheetRect = document.querySelector<HTMLElement>(".sheet-position")?.getBoundingClientRect();
+
+  if (!mapRect || !sheetRect) {
+    moveTo(base);
+    return;
+  }
+
+  const scale = Math.min(mapRect.width / base.width, mapRect.height / base.height);
+  const boothBottom =
+    mapRect.top +
+    (mapRect.height - base.height * scale) / 2 +
+    (booth.y + booth.height - base.y) * scale;
+  const overlap = boothBottom - sheetRect.top;
+  const target = overlap > 0 ? { ...base, y: base.y + (overlap + 12) / scale } : base;
+
+  if (
+    target.x !== view.value.x ||
+    target.y !== view.value.y ||
+    target.width !== view.value.width ||
+    target.height !== view.value.height
+  ) {
+    moveTo(target);
+  }
 }
 
 function choose(booth: Booth) {
   selectedId.value = booth.id;
+  hall.value = booth.hall;
   notice.value = "";
-  focus(booth);
+  selectionVersion++;
+
+  void revealBooth(booth, boothView(booth), selectionVersion);
+}
+
+function renderHallScrub(now: number) {
+  const state = hallScrub;
+  if (!state) {
+    return;
+  }
+
+  const base = hallView(state.originHall);
+  const progress = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? 1
+    : Math.min(1, (now - state.startedAt) / 140);
+  const eased = 1 - (1 - progress) ** 3;
+
+  setView({
+    x: state.originalView.x + (base.x - state.originalView.x + state.steps * 860) * eased,
+    y: state.originalView.y + (base.y - state.originalView.y) * eased,
+    width: state.originalView.width + (base.width - state.originalView.width) * eased,
+    height: state.originalView.height + (base.height - state.originalView.height) * eased,
+  });
+
+  if (progress < 1) {
+    state.frame = requestAnimationFrame(renderHallScrub);
+  } else {
+    state.frame = 0;
+  }
+}
+
+function startHallScrub() {
+  selectionVersion++;
+  const originalView = { ...view.value };
+
+  setView(originalView);
+  hallScrub = {
+    originHall: hall.value,
+    originalView,
+    originalSelection: selectedId.value,
+    startedAt: performance.now(),
+    steps: 0,
+    frame: requestAnimationFrame(renderHallScrub),
+  };
+
+  selectedId.value = "";
+}
+
+function moveHallScrub(steps: number) {
+  if (!hallScrub) {
+    return;
+  }
+
+  hallScrub.steps = steps;
+  if (!hallScrub.frame) {
+    const base = hallView(hallScrub.originHall);
+
+    setView({ ...base, x: base.x + steps * 860 });
+  }
+}
+
+function endHallScrub(steps: number) {
+  if (!hallScrub) {
+    return;
+  }
+
+  const originIndex = halls.indexOf(hallScrub.originHall);
+  const target = halls[Math.round(originIndex + steps)]!;
+
+  cancelAnimationFrame(hallScrub.frame);
+  hallScrub = undefined;
+  hall.value = target;
+  moveTo(hallView(target));
+}
+
+function cancelHallScrub() {
+  if (!hallScrub) {
+    return;
+  }
+
+  const state = hallScrub;
+
+  cancelAnimationFrame(state.frame);
+  hallScrub = undefined;
+  hall.value = state.originHall;
+  selectedId.value = state.originalSelection;
+  moveTo(state.originalView);
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
@@ -155,6 +306,11 @@ onMounted(async () => {
   persist();
 });
 onUnmounted(() => {
+  selectionVersion++;
+  if (hallScrub) {
+    cancelAnimationFrame(hallScrub.frame);
+  }
+
   persist();
   clearTimeout(saveTimer);
   window.removeEventListener("resize", syncPageHeight);
@@ -206,14 +362,6 @@ onUnmounted(() => {
         @open="searchOpen = $event"
       />
     </header>
-    <div class="map-controls ui-surface">
-      <button class="ui-icon-button" aria-label="放大地图" @click="zoom(0.75)">
-        <AppIcon class="control-icon" name="plus" />
-      </button>
-      <button class="ui-icon-button" aria-label="缩小地图" @click="zoom(1.33)">
-        <AppIcon class="control-icon" name="minus" />
-      </button>
-    </div>
     <Transition name="float">
       <p v-if="notice" class="toast ui-surface" role="status">
         {{ notice
@@ -222,7 +370,17 @@ onUnmounted(() => {
         </button>
       </p>
     </Transition>
-    <HallSwitcher class="hall-position" :model-value="hall" :halls="halls" @select="focusHall" />
+    <HallSwitcher
+      v-if="ready"
+      class="hall-position"
+      :model-value="hall"
+      :halls="halls"
+      @select="focusHall"
+      @scrub-start="startHallScrub"
+      @scrub-move="moveHallScrub"
+      @scrub-end="endHallScrub"
+      @scrub-cancel="cancelHallScrub"
+    />
     <BoothSheet
       class="sheet-position"
       :booth="selected"
@@ -263,27 +421,6 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-}
-
-.map-controls {
-  position: absolute;
-  right: var(--screen-padding);
-  top: 38%;
-  display: flex;
-  flex-direction: column;
-  padding: 3px;
-  border-radius: var(--radius-pill);
-}
-
-.map-controls button {
-  width: 36px;
-  height: 38px;
-  background: transparent;
-}
-
-.control-icon {
-  width: 20px;
-  height: 20px;
 }
 
 .hall-position {
