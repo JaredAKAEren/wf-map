@@ -643,7 +643,7 @@ test("减少动态效果直接到位，旧位置记录清理，照片能力和�
   await searchFor(page, "W5A28");
   await searchResult(page, /A28/).click();
   await page.getByRole("button", { name: "展开贴图" }).click();
-  await expect(page.getByRole("button", { name: "添加贴图" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "添加贴图" })).toBeEnabled();
   await expect(page.getByText(/当前位置|目标展位|上次确认/)).toHaveCount(0);
   await expect(page.getByRole("button", { name: "更多地图选项" })).toHaveCount(0);
   await expect

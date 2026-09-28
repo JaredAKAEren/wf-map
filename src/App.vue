@@ -5,6 +5,7 @@ import { SplashScreen } from "@capacitor/splash-screen";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 import BoothSheet from "./components/BoothSheet.vue";
+import InstallGuide from "./components/InstallGuide.vue";
 import MapSearch from "./components/MapSearch.vue";
 import AppIcon from "./components/ui/AppIcon.vue";
 import HallSwitcher from "./components/ui/HallSwitcher.vue";
@@ -30,6 +31,7 @@ const searchOpen = ref(false);
 const ready = ref(false);
 const pageHeight = ref("100dvh");
 const settledMaps = new Set<string>();
+const mapBase = import.meta.env.BASE_URL;
 let selectionVersion = 0;
 let hallScrub: HallScrub | undefined;
 let launchScreenHidden = false;
@@ -371,7 +373,7 @@ onUnmounted(() => {
       >
         <g v-for="name in halls" :key="name" :transform="`translate(${offset(name)},0)`">
           <image
-            :href="`/maps/${name}.png`"
+            :href="`${mapBase}maps/${name}.png`"
             width="800"
             :height="name === 'W1' ? 1500 : 1480"
             @load="settleMap(name)"
@@ -396,6 +398,7 @@ onUnmounted(() => {
         @select="choose"
         @open="searchOpen = $event"
       />
+      <InstallGuide v-show="!searchOpen" />
     </header>
     <Transition name="float">
       <p v-if="notice" class="toast ui-surface" role="status">
