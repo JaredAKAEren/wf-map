@@ -58,6 +58,16 @@ vp run test:pages
 
 Pages 构建使用 `/wf-map/` 路径并生成 Web App Manifest 与 Service Worker；普通 `vp run build` 仍用于 Android，同一份资源不会注册网页 Service Worker。`.github/workflows/pages.yml` 会在 `feat/github-pages-pwa` 试部署分支或 `main` 更新后，检查并部署 `dist/`；仓库 Pages 的 Source 设置为 **GitHub Actions**。
 
+## 常见问题
+
+### 小米浏览器 PWA 无法选择文件
+
+小米 HyperOS 系统浏览器安装到桌面的 PWA 可能无法打开系统图片选择器：点击“添加贴图”后不会弹出选择界面，继续点击也没有反应。这是小米浏览器 PWA 容器的兼容限制，与网站的照片权限无关。可尝试使用其他浏览器安装。
+
+### 添加到桌面前需要开启什么权限？
+
+Android 浏览器添加到桌面前，需要在该浏览器的系统权限中允许“桌面快捷方式”或“主屏幕快捷方式”。如果确认安装后只打开了浏览器的应用信息，或桌面没有出现图标，请开启该权限，再返回页面刷新并重试安装。
+
 ## Android 构建
 
 ### 环境准备
