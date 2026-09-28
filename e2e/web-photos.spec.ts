@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { devices, expect, test, type Page } from "@playwright/test";
 
 const image = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=",
@@ -22,6 +22,43 @@ async function upload(page: Page, name = "fixture.png") {
     buffer: image,
   });
 }
+
+test("移动端展开动画抑制 click 时仍从 pointerup 打开图片选择器", async ({ browser }) => {
+  const context = await browser.newContext({ ...devices["Pixel 7"] });
+  const page = await context.newPage();
+  await page.goto("/");
+  await choose(page, "A34");
+
+  const input = page.locator('input[type="file"]');
+  await input.evaluate((element) => {
+    if (!(element instanceof HTMLInputElement)) {
+      throw new TypeError("贴图选择器不是 input");
+    }
+
+    element.dataset.pickerCalls = "0";
+    element.click = () => {
+      element.dataset.pickerCalls = String(Number(element.dataset.pickerCalls) + 1);
+    };
+  });
+  const button = page.getByRole("button", { name: "添加贴图" });
+  await button.dispatchEvent("pointerdown", {
+    button: 0,
+    clientX: 40,
+    clientY: 40,
+    isPrimary: true,
+    pointerId: 1,
+  });
+  await button.dispatchEvent("pointerup", {
+    button: 0,
+    clientX: 40,
+    clientY: 40,
+    isPrimary: true,
+    pointerId: 1,
+  });
+  await expect(input).toHaveAttribute("data-picker-calls", "1");
+
+  await context.close();
+});
 
 test("网页贴图可保存、去重、改绑并解除关联", async ({ page }) => {
   await page.goto("/");

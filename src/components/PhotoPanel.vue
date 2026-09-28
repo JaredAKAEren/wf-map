@@ -31,6 +31,7 @@ const viewerUrl = ref("");
 let request = 0;
 let generation = 0;
 let observer: ResizeObserver | undefined;
+let webPickerPointer: { id: number; x: number; y: number } | undefined;
 
 async function refresh() {
   if (!props.active) {
@@ -168,6 +169,38 @@ function selectPhoto() {
   }
 }
 
+function startWebPickerPointer(event: PointerEvent) {
+  if (nativePhotos || busy.value || !event.isPrimary || event.button !== 0) {
+    webPickerPointer = undefined;
+
+    return;
+  }
+
+  webPickerPointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+}
+
+function finishWebPickerPointer(event: PointerEvent) {
+  const pointer = webPickerPointer;
+  webPickerPointer = undefined;
+  if (
+    nativePhotos ||
+    busy.value ||
+    !pointer ||
+    event.pointerId !== pointer.id ||
+    Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > 12
+  ) {
+    return;
+  }
+
+  // 展开动画仍在改变布局时，移动端 Chromium 可能抑制随后合成的 click。
+  event.preventDefault();
+  fileInput.value?.click();
+}
+
+function cancelWebPickerPointer() {
+  webPickerPointer = undefined;
+}
+
 function selectWebFiles(event: Event) {
   const input = event.target as HTMLInputElement;
   const files = Array.from(input.files ?? []);
@@ -261,6 +294,7 @@ watch(
     request += 1;
     busy.value = false;
     loading.value = false;
+    webPickerPointer = undefined;
     if (active) {
       void refresh();
     } else {
@@ -288,6 +322,7 @@ onMounted(() => {
 onUnmounted(() => {
   generation += 1;
   request += 1;
+  webPickerPointer = undefined;
   observer?.disconnect();
   closeViewer();
 });
@@ -328,6 +363,9 @@ onUnmounted(() => {
           aria-label="添加贴图"
           :disabled="busy || loading"
           @click="selectPhoto"
+          @pointerdown="startWebPickerPointer"
+          @pointerup="finishWebPickerPointer"
+          @pointercancel="cancelWebPickerPointer"
         >
           <AppIcon v-show="!busy && !loading" name="plus" />
           <LoadingIcon :active="busy || loading" />
