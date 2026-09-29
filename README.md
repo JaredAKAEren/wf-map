@@ -64,6 +64,8 @@ vp run preview:pages
 
 Pages 构建使用 `/wf-map/` 路径并生成 Web App Manifest 与 Service Worker；普通 `vp run build` 仍用于 Android，同一份资源不会注册网页 Service Worker。`.github/workflows/pages.yml` 会在 `feat/github-pages-pwa` 试部署分支或 `main` 更新后，检查并部署 `dist/`；仓库 Pages 的 Source 设置为 **GitHub Actions**。
 
+已安装或已缓存的网页版会继续使用当前版本；联网时在后台缓存新版本，全部准备完成后提示刷新。离线或更新失败时不会清除当前可用缓存。
+
 ## 常见问题
 
 ### 小米浏览器 PWA 无法选择文件

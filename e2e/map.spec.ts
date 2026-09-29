@@ -120,18 +120,16 @@ test("细分编号可搜索并定位所属主分区，空名记录显示待补�
   await expect(searchResult(page, /W1 · B4-03.*名称待补充/)).toBeVisible();
 });
 
-test("个人摊位均分两列，编号与缺失名称完整显示", async ({ page }) => {
+test("个人摊位按渲染高度平衡两列，编号与缺失名称完整显示", async ({ page }) => {
   for (const width of [320, 360, 700]) {
     await page.setViewportSize({ width, height: 800 });
     await page.goto("/");
-    await searchFor(page, "W1E8");
-    await searchResult(page, /W1 · E8/).click();
-    await expect(page.getByRole("heading", { name: "E8", exact: true })).toBeVisible();
+    await searchFor(page, "W1D6");
+    await searchResult(page, /W1 · D6/).click();
+    await expect(page.getByRole("heading", { name: "D6", exact: true })).toBeVisible();
 
     const columns = page.locator(".personal-column");
     await expect(columns).toHaveCount(2);
-    await expect(columns.nth(0).locator(".booth-entry")).toHaveCount(6);
-    await expect(columns.nth(1).locator(".booth-entry")).toHaveCount(7);
     await expect(page.locator(".booth-slot")).toHaveText([
       "01",
       "02",
@@ -146,6 +144,8 @@ test("个人摊位均分两列，编号与缺失名称完整显示", async ({ pa
       "11",
       "12",
       "13",
+      "14",
+      "15",
     ]);
     const layout = await page.locator(".personal-entries").evaluate((element) => {
       return {
@@ -156,6 +156,12 @@ test("个人摊位均分两列，编号与缺失名称完整显示", async ({ pa
     });
     expect(layout.content).toBeLessThanOrEqual(layout.width);
     expect(layout.wordBreak).toBe("normal");
+    const columnHeights = await columns.evaluateAll((elements) => {
+      return elements.map((element) => {
+        return element.getBoundingClientRect().height;
+      });
+    });
+    expect(columnHeights[1]).toBeLessThanOrEqual(columnHeights[0]!);
     const widths = await page.locator(".booth-slot").evaluateAll((elements) => {
       return elements.map((element) => {
         return element.getBoundingClientRect().width;
@@ -988,8 +994,8 @@ test("清除搜索内容后输入框保持聚焦", async ({ page }) => {
   await expect(searchResults(page)).toContainText("输入展商名称");
 });
 
-test("窄屏与 700px 断点两侧的浮层都保持在可视区域内", async ({ page }) => {
-  for (const width of [360, 699]) {
+test("不同宽度的浮层都沿用窄屏布局并保持在可视区域内", async ({ page }) => {
+  for (const width of [360, 699, 700]) {
     await page.setViewportSize({ width, height: 800 });
     await page.goto("/");
     const hallSwitcher = (await page.getByRole("group", { name: "展馆选择" }).boundingBox())!;
@@ -998,18 +1004,10 @@ test("窄屏与 700px 断点两侧的浮层都保持在可视区域内", async (
     expect(hallSwitcher.y).toBeGreaterThan(700);
   }
 
-  await page.setViewportSize({ width: 700, height: 800 });
-  await expect
-    .poll(async () => {
-      return Math.round((await page.getByRole("group", { name: "展馆选择" }).boundingBox())!.y);
-    })
-    .toBe(20);
-  const hallSwitcher = (await page.getByRole("group", { name: "展馆选择" }).boundingBox())!;
-  expect(hallSwitcher.x + hallSwitcher.width).toBeLessThanOrEqual(680);
   await searchFor(page, "A34");
   const results = (await searchResults(page).boundingBox())!;
   expect(results.x).toBeGreaterThanOrEqual(12);
-  expect(results.x + results.width).toBeLessThanOrEqual(452);
+  expect(results.width).toBeLessThanOrEqual(440);
 });
 
 test("可视区域高度变化时地图平滑缩放", async ({ page }) => {

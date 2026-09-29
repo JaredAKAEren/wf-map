@@ -408,6 +408,7 @@ onUnmounted(() => {
 .photos {
   border-top: 1px solid var(--color-border);
   padding-top: 12px;
+  container-type: inline-size;
 }
 
 .file-input {
@@ -470,6 +471,12 @@ h3 span {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+}
+
+@container (width >= 440px) {
+  .photo-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .photo-item {

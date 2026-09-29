@@ -4,10 +4,10 @@ import { Preferences } from "@capacitor/preferences";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
+import AppNotifications from "./components/AppNotifications.vue";
 import BoothSheet from "./components/BoothSheet.vue";
 import InstallGuide from "./components/InstallGuide.vue";
 import MapSearch from "./components/MapSearch.vue";
-import AppIcon from "./components/ui/AppIcon.vue";
 import HallSwitcher from "./components/ui/HallSwitcher.vue";
 import { useMapViewport } from "./composables/useMapViewport";
 import { booths, halls, isHall, type Booth, type Hall } from "./data/exhibition";
@@ -400,14 +400,6 @@ onUnmounted(() => {
       />
       <InstallGuide v-show="!searchOpen" />
     </header>
-    <Transition name="float">
-      <p v-if="notice" class="toast ui-surface" role="status">
-        {{ notice
-        }}<button class="ui-icon-button" aria-label="关闭提示" @click="notice = ''">
-          <AppIcon name="close" />
-        </button>
-      </p>
-    </Transition>
     <HallSwitcher
       v-if="ready"
       class="hall-position"
@@ -426,6 +418,7 @@ onUnmounted(() => {
       @close="selectedId = ''"
     />
   </main>
+  <AppNotifications v-model:notice="notice" />
 </template>
 
 <style scoped>
@@ -480,32 +473,8 @@ onUnmounted(() => {
   bottom: calc(var(--screen-padding) + env(safe-area-inset-bottom));
   left: var(--screen-padding);
   right: var(--screen-padding);
-}
-
-.toast {
-  position: absolute;
-  top: calc(140px + env(safe-area-inset-top));
-  left: var(--screen-padding);
-  right: var(--screen-padding);
-  z-index: 6;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  font-size: 13px;
-}
-
-.float-enter-active,
-.float-leave-active {
-  transition:
-    opacity var(--duration-normal),
-    transform var(--duration-normal);
-}
-
-.float-enter-from,
-.float-leave-to {
-  opacity: 0;
-  transform: translateY(12px);
+  max-width: 520px;
+  margin-inline: auto;
 }
 
 .selected-booth {
@@ -513,23 +482,5 @@ onUnmounted(() => {
   stroke: var(--color-primary);
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
-}
-
-@media (width >= 700px) {
-  .map-header {
-    max-width: 440px;
-  }
-
-  .hall-position,
-  .has-selection .hall-position {
-    left: auto;
-    right: 20px;
-    top: 20px;
-    transform: none;
-  }
-
-  .sheet-position {
-    width: 380px;
-  }
 }
 </style>
