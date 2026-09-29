@@ -245,6 +245,36 @@ function expectIntermediate(heights: number[]) {
   ).toBe(true);
 }
 
+test("移动端展开动画抑制 click 时仍从 pointerup 打开原生图片选择器", async ({ page }) => {
+  await prepare(page, 0);
+  await choose(page);
+
+  const button = page.getByRole("button", { name: "添加贴图" });
+  await button.dispatchEvent("pointerdown", {
+    button: 0,
+    clientX: 40,
+    clientY: 40,
+    isPrimary: true,
+    pointerId: 1,
+  });
+  await button.dispatchEvent("pointerup", {
+    button: 0,
+    clientX: 40,
+    clientY: 40,
+    isPrimary: true,
+    pointerId: 1,
+  });
+  await expect
+    .poll(() => {
+      return page.evaluate(() => {
+        return window.photoHarness.calls.filter((call) => {
+          return call.method === "pick";
+        }).length;
+      });
+    })
+    .toBe(1);
+});
+
 test("展开收起和增删跨行均有高度中间帧，已有缩略图不重建", async ({ page }) => {
   await prepare(page);
   await choose(page);
