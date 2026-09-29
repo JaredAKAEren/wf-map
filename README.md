@@ -47,13 +47,19 @@ vp run build
 
 ## 网页版与离线安装
 
-启用 Pages 并完成发布后，网页版地址为 [GitHub Pages](https://JaredAKAEren.github.io/wf-map/)。首次在线打开并等待页面显示“离线地图已准备好”后，即可从浏览器菜单或页面“安装”入口添加到桌面。iPhone/iPad 通过浏览器的“分享”菜单选择“添加到主屏幕”。请先安装，再从桌面应用内添加贴图；iOS 浏览器和桌面应用不会共享已有的浏览器贴图数据。
+启用 Pages 并完成发布后，网页版地址为 [GitHub Pages](https://JaredAKAEren.github.io/wf-map/)。首次在线打开并等待页面右上角出现“安装”入口后，即可从浏览器菜单或页面入口添加到桌面。iPhone/iPad 通过浏览器的“分享”菜单选择“添加到主屏幕”。请先安装，再从桌面应用内添加贴图；iOS 浏览器和桌面应用不会共享已有的浏览器贴图数据。
 
 网页版贴图仅保存在当前浏览器或已安装应用的本地存储中，不会上传或跨设备同步。清除站点数据、卸载应用或浏览器回收存储空间可能使贴图副本丢失；设备相册中的源文件不会受影响。为当前仓库生成 GitHub Pages 产物：
 
 ```sh
 vp run build:pages
 vp run test:pages
+```
+
+如需在本地浏览器查看安装入口、弹窗和离线行为，运行：
+
+```sh
+vp run preview:pages
 ```
 
 Pages 构建使用 `/wf-map/` 路径并生成 Web App Manifest 与 Service Worker；普通 `vp run build` 仍用于 Android，同一份资源不会注册网页 Service Worker。`.github/workflows/pages.yml` 会在 `feat/github-pages-pwa` 试部署分支或 `main` 更新后，检查并部署 `dist/`；仓库 Pages 的 Source 设置为 **GitHub Actions**。

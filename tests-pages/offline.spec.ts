@@ -2,7 +2,6 @@ import { devices, expect, test } from "@playwright/test";
 
 test("Pages 子路径安装后可断网打开地图并搜索", async ({ page, context }) => {
   await page.goto("/wf-map/");
-  await expect(page.getByRole("button", { name: "添加到桌面" })).toBeVisible();
 
   const manifest = await page.locator('link[rel="manifest"]').getAttribute("href");
   expect(manifest).toBe("/wf-map/manifest.webmanifest");
@@ -12,7 +11,7 @@ test("Pages 子路径安装后可断网打开地图并搜索", async ({ page, co
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
-  await expect(page.getByText("离线地图已准备好")).toBeVisible();
+  await expect(page.getByRole("button", { name: "添加到桌面" })).toBeVisible();
   await page.reload();
   await expect
     .poll(() => {
@@ -45,12 +44,12 @@ test("Pages 子路径安装后可断网打开地图并搜索", async ({ page, co
   await expect(page.getByRole("button", { name: "查看原图" })).toHaveCount(1);
 });
 
-test("移动端安装引导可关闭、重开，并显示 iOS 添加步骤", async ({ browser }) => {
+test("移动端安装引导可通过安装按钮关闭、重开，并显示 iOS 添加步骤", async ({ browser }) => {
   const context = await browser.newContext({ ...devices["iPhone 13"] });
   const page = await context.newPage();
   await page.goto("/wf-map/");
   await expect(page.getByText("添加到主屏幕")).toBeVisible();
-  await page.getByRole("button", { name: "关闭安装提示" }).click();
+  await page.getByRole("button", { name: "添加到桌面" }).click();
   await expect(page.getByText("添加到主屏幕")).toHaveCount(0);
   await page.getByRole("button", { name: "添加到桌面" }).click();
   await expect(page.getByText("添加到主屏幕")).toBeVisible();
