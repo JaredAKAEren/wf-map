@@ -161,10 +161,11 @@ async function associate(picked?: Promise<{ uris: string[]; failed: number }>) {
   }, "关联未完成，请重试。已保存的记录会保留。");
 }
 
-function selectPhoto() {
+function selectPhoto(event: MouseEvent) {
   if (nativePhotos) {
     void associate();
-  } else {
+  } else if (event.detail === 0) {
+    // 指针操作已在 pointerup 中打开选择器；这里只处理键盘等非指针激活。
     fileInput.value?.click();
   }
 }

@@ -23,7 +23,7 @@ async function upload(page: Page, name = "fixture.png") {
   });
 }
 
-test("移动端展开动画抑制 click 时仍从 pointerup 打开图片选择器", async ({ browser }) => {
+test("移动端一次指针操作只打开一次图片选择器", async ({ browser }) => {
   const context = await browser.newContext({ ...devices["Pixel 7"] });
   const page = await context.newPage();
   await page.goto("/");
@@ -55,7 +55,11 @@ test("移动端展开动画抑制 click 时仍从 pointerup 打开图片选择�
     isPrimary: true,
     pointerId: 1,
   });
+  await button.dispatchEvent("click", { button: 0, detail: 1 });
   await expect(input).toHaveAttribute("data-picker-calls", "1");
+
+  await button.dispatchEvent("click", { detail: 0 });
+  await expect(input).toHaveAttribute("data-picker-calls", "2");
 
   await context.close();
 });
