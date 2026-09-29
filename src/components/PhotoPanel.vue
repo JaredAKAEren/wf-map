@@ -31,7 +31,7 @@ const viewerUrl = ref("");
 let request = 0;
 let generation = 0;
 let observer: ResizeObserver | undefined;
-let webPickerPointer: { id: number; x: number; y: number } | undefined;
+let pickerPointer: { id: number; x: number; y: number } | undefined;
 
 async function refresh() {
   if (!props.active) {
@@ -162,29 +162,32 @@ async function associate(picked?: Promise<{ uris: string[]; failed: number }>) {
 }
 
 function selectPhoto(event: MouseEvent) {
+  // 指针操作已在 pointerup 中打开选择器；这里只处理键盘等非指针激活。
+  if (event.detail !== 0) {
+    return;
+  }
+
   if (nativePhotos) {
     void associate();
-  } else if (event.detail === 0) {
-    // 指针操作已在 pointerup 中打开选择器；这里只处理键盘等非指针激活。
+  } else {
     fileInput.value?.click();
   }
 }
 
-function startWebPickerPointer(event: PointerEvent) {
-  if (nativePhotos || busy.value || !event.isPrimary || event.button !== 0) {
-    webPickerPointer = undefined;
+function startPickerPointer(event: PointerEvent) {
+  if (busy.value || !event.isPrimary || event.button !== 0) {
+    pickerPointer = undefined;
 
     return;
   }
 
-  webPickerPointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  pickerPointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
 }
 
-function finishWebPickerPointer(event: PointerEvent) {
-  const pointer = webPickerPointer;
-  webPickerPointer = undefined;
+function finishPickerPointer(event: PointerEvent) {
+  const pointer = pickerPointer;
+  pickerPointer = undefined;
   if (
-    nativePhotos ||
     busy.value ||
     !pointer ||
     event.pointerId !== pointer.id ||
@@ -195,11 +198,15 @@ function finishWebPickerPointer(event: PointerEvent) {
 
   // 展开动画仍在改变布局时，移动端 Chromium 可能抑制随后合成的 click。
   event.preventDefault();
-  fileInput.value?.click();
+  if (nativePhotos) {
+    void associate();
+  } else {
+    fileInput.value?.click();
+  }
 }
 
-function cancelWebPickerPointer() {
-  webPickerPointer = undefined;
+function cancelPickerPointer() {
+  pickerPointer = undefined;
 }
 
 function selectWebFiles(event: Event) {
@@ -295,7 +302,7 @@ watch(
     request += 1;
     busy.value = false;
     loading.value = false;
-    webPickerPointer = undefined;
+    pickerPointer = undefined;
     if (active) {
       void refresh();
     } else {
@@ -323,7 +330,7 @@ onMounted(() => {
 onUnmounted(() => {
   generation += 1;
   request += 1;
-  webPickerPointer = undefined;
+  pickerPointer = undefined;
   observer?.disconnect();
   closeViewer();
 });
@@ -364,9 +371,9 @@ onUnmounted(() => {
           aria-label="添加贴图"
           :disabled="busy || loading"
           @click="selectPhoto"
-          @pointerdown="startWebPickerPointer"
-          @pointerup="finishWebPickerPointer"
-          @pointercancel="cancelWebPickerPointer"
+          @pointerdown="startPickerPointer"
+          @pointerup="finishPickerPointer"
+          @pointercancel="cancelPickerPointer"
         >
           <AppIcon v-show="!busy && !loading" name="plus" />
           <LoadingIcon :active="busy || loading" />
