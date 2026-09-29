@@ -2,6 +2,7 @@ import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
+  base: process.env.VITE_WF_PAGES === "1" ? "/wf-map/" : "/",
   plugins: [vue()],
   fmt: { arrowParens: "always", sortImports: true, sortPackageJson: true },
   lint: {

@@ -561,7 +561,7 @@ test("覆盖层打开时点击搜索只关闭覆盖层", async ({ page }) => {
   await expect(page.getByRole("combobox")).toHaveCount(0);
 });
 
-test("旧列表晚返回不覆盖新展位，桌面面板保持 380px", async ({ page }) => {
+test("旧列表晚返回不覆盖新展位，桌面面板保持 520px", async ({ page }) => {
   await prepare(page);
   await page.setViewportSize({ width: 960, height: 900 });
   await page.evaluate(() => {
@@ -581,7 +581,7 @@ test("旧列表晚返回不覆盖新展位，桌面面板保持 380px", async ({
   await page.waitForTimeout(1250);
   await expect(page.getByRole("button", { name: "查看原图" })).toHaveCount(1);
   await expect(page.locator(".sheet-heading")).toContainText("A28");
-  expect((await page.locator(".booth-sheet").boundingBox())!.width).toBe(380);
+  expect((await page.locator(".booth-sheet").boundingBox())!.width).toBe(520);
   await page.screenshot({ path: test.info().outputPath("stickers-desktop.png") });
 });
 

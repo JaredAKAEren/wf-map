@@ -25,12 +25,16 @@ const message = ref("");
 const content = ref<HTMLElement>();
 const height = ref<number>();
 const reassignDialog = ref<InstanceType<typeof PhotoReassignDialog>>();
+const fileInput = ref<HTMLInputElement>();
+const viewer = ref<HTMLDialogElement>();
+const viewerUrl = ref("");
 let request = 0;
 let generation = 0;
 let observer: ResizeObserver | undefined;
+let webPickerPointer: { id: number; x: number; y: number } | undefined;
 
 async function refresh() {
-  if (!nativePhotos || !props.active) {
+  if (!props.active) {
     return;
   }
 
@@ -96,9 +100,12 @@ async function mutate(action: (current: () => boolean) => Promise<void>, failure
   message.value = "";
   try {
     await action(current);
-  } catch {
+  } catch (error) {
     if (current()) {
-      message.value = failure;
+      message.value =
+        error instanceof DOMException && error.name === "QuotaExceededError"
+          ? "浏览器存储空间不足，贴图未保存。请释放设备空间后重试。"
+          : failure;
     }
   } finally {
     if (current()) {
@@ -110,12 +117,12 @@ async function mutate(action: (current: () => boolean) => Promise<void>, failure
   }
 }
 
-async function associate() {
+async function associate(picked?: Promise<{ uris: string[]; failed: number }>) {
   const booth = props.booth;
   await mutate(async (current) => {
     let uris: string[] = [];
     try {
-      const result = await photos.pick();
+      const result = await (picked ?? photos.pick());
       uris = result.uris;
       for (const uri of uris) {
         if (!current()) {
@@ -140,9 +147,7 @@ async function associate() {
         }
       }
       if (current()) {
-        message.value = result.failed
-          ? `${result.failed} 张图片未能取得长期读取权限，请重新选择。`
-          : "";
+        message.value = result.failed ? `${result.failed} 张图片无法读取，请重新选择。` : "";
       }
     } finally {
       try {
@@ -156,6 +161,57 @@ async function associate() {
   }, "关联未完成，请重试。已保存的记录会保留。");
 }
 
+function selectPhoto(event: MouseEvent) {
+  if (nativePhotos) {
+    void associate();
+  } else if (event.detail === 0) {
+    // 指针操作已在 pointerup 中打开选择器；这里只处理键盘等非指针激活。
+    fileInput.value?.click();
+  }
+}
+
+function startWebPickerPointer(event: PointerEvent) {
+  if (nativePhotos || busy.value || !event.isPrimary || event.button !== 0) {
+    webPickerPointer = undefined;
+
+    return;
+  }
+
+  webPickerPointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+}
+
+function finishWebPickerPointer(event: PointerEvent) {
+  const pointer = webPickerPointer;
+  webPickerPointer = undefined;
+  if (
+    nativePhotos ||
+    busy.value ||
+    !pointer ||
+    event.pointerId !== pointer.id ||
+    Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > 12
+  ) {
+    return;
+  }
+
+  // 展开动画仍在改变布局时，移动端 Chromium 可能抑制随后合成的 click。
+  event.preventDefault();
+  fileInput.value?.click();
+}
+
+function cancelWebPickerPointer() {
+  webPickerPointer = undefined;
+}
+
+function selectWebFiles(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  if (files.length) {
+    void associate(photos.stageFiles(files));
+  }
+
+  input.value = "";
+}
+
 async function remove(uri: string) {
   await mutate(() => {
     return photos.remove({ uri });
@@ -165,11 +221,33 @@ async function remove(uri: string) {
 async function open(uri: string) {
   const token = generation;
   try {
-    await photos.open({ uri });
+    if (nativePhotos) {
+      await photos.open({ uri });
+    } else {
+      const blob = await photos.original({ uri });
+      if (generation !== token || !props.active) {
+        return;
+      }
+
+      closeViewer();
+      viewerUrl.value = URL.createObjectURL(blob);
+      await nextTick();
+      viewer.value?.showModal();
+    }
   } catch {
     if (generation === token && props.active) {
-      message.value = "原图不可访问，或没有可用的图片查看器。";
+      message.value = "原图不可访问，请重试。";
     }
+  }
+}
+
+function closeViewer() {
+  if (viewer.value?.open) {
+    viewer.value.close();
+  }
+  if (viewerUrl.value) {
+    URL.revokeObjectURL(viewerUrl.value);
+    viewerUrl.value = "";
   }
 }
 
@@ -217,10 +295,12 @@ watch(
     request += 1;
     busy.value = false;
     loading.value = false;
+    webPickerPointer = undefined;
     if (active) {
       void refresh();
     } else {
       reassignDialog.value?.cancel();
+      closeViewer();
     }
   },
   { immediate: true },
@@ -243,7 +323,9 @@ onMounted(() => {
 onUnmounted(() => {
   generation += 1;
   request += 1;
+  webPickerPointer = undefined;
   observer?.disconnect();
+  closeViewer();
 });
 </script>
 
@@ -257,7 +339,7 @@ onUnmounted(() => {
         {{
           nativePhotos
             ? "添加现场照片、商品信息图等，长按图片可解除关联。"
-            : "在安卓安装包中添加图片。网页版可预览地图。"
+            : "贴图仅保存在当前浏览器中，长按图片可解除关联。"
         }}
       </p>
       <p v-if="message" role="status" class="notice">{{ message }}</p>
@@ -280,14 +362,40 @@ onUnmounted(() => {
           key="add-photo"
           class="add-photo"
           aria-label="添加贴图"
-          :disabled="!nativePhotos || busy || loading"
-          @click="associate"
+          :disabled="busy || loading"
+          @click="selectPhoto"
+          @pointerdown="startWebPickerPointer"
+          @pointerup="finishWebPickerPointer"
+          @pointercancel="cancelWebPickerPointer"
         >
           <AppIcon v-show="!busy && !loading" name="plus" />
           <LoadingIcon :active="busy || loading" />
         </button>
       </TransitionGroup>
+      <input
+        v-if="!nativePhotos"
+        ref="fileInput"
+        class="file-input"
+        type="file"
+        accept="image/*"
+        multiple
+        tabindex="-1"
+        aria-hidden="true"
+        @change="selectWebFiles"
+      />
       <PhotoReassignDialog ref="reassignDialog" />
+      <dialog
+        v-if="!nativePhotos"
+        ref="viewer"
+        class="photo-viewer"
+        aria-label="展位贴图原图"
+        @close="closeViewer"
+      >
+        <button class="viewer-close ui-surface" aria-label="关闭原图" @click="closeViewer">
+          <AppIcon name="close" />
+        </button>
+        <img v-if="viewerUrl" :src="viewerUrl" alt="展位贴图原图" />
+      </dialog>
     </section>
   </div>
 </template>
@@ -301,6 +409,42 @@ onUnmounted(() => {
 .photos {
   border-top: 1px solid var(--color-border);
   padding-top: 12px;
+  container-type: inline-size;
+}
+
+.file-input {
+  display: none;
+}
+
+.photo-viewer {
+  max-width: 100vw;
+  max-height: 100dvh;
+  width: 100vw;
+  height: 100dvh;
+  border: 0;
+  padding: 16px;
+  background: rgb(22 18 14 / 94%);
+}
+
+.photo-viewer::backdrop {
+  background: rgb(22 18 14 / 80%);
+}
+
+.photo-viewer img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.viewer-close {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top));
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
 }
 
 h3 {
@@ -328,6 +472,12 @@ h3 span {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+}
+
+@container (width >= 440px) {
+  .photo-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .photo-item {

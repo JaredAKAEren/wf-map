@@ -6,17 +6,20 @@
   "scripts": {
     "dev": "vp dev --host 127.0.0.1",
     "build": "vue-tsc --noEmit && vp build",
+    "build:pages": "VITE_WF_PAGES=1 vp run build && node scripts/build-pages.mjs",
     "check": "vp check && vp run typecheck && vp run stylelint",
     "typecheck": "vue-tsc --noEmit",
     "stylelint": "stylelint \"src/**/*.{css,vue}\"",
     "test": "vp test run",
     "test:e2e": "playwright test",
+    "test:pages": "playwright test --config playwright.pages.config.ts",
     "android:sync": "vp run build && cap sync android",
     "android:debug": "vp run android:sync && node scripts/android-build.mjs",
     "android:deploy": "node scripts/android-deploy.mjs",
     "android:release": "vp run android:sync && node scripts/android-build.mjs :app:lintRelease :app:assembleRelease",
     "prepare": "vp config --no-agent",
-    "preview": "vp preview --host 127.0.0.1"
+    "preview": "vp preview --host 127.0.0.1",
+    "preview:pages": "vp run build:pages && VITE_WF_PAGES=1 vp preview --host 127.0.0.1"
   },
   "dependencies": {
     "@capacitor/android": "8.5.2",

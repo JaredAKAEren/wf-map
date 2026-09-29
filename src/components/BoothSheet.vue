@@ -20,6 +20,8 @@ const emit = defineEmits<{ close: [] }>();
 
 const displayed = shallowRef(props.booth);
 const expanded = ref(false);
+const personalEntriesElement = ref<HTMLElement>();
+const personalSplit = ref(1);
 const gestureDragging = ref(false);
 const gestureExpanded = ref(false);
 const gestureY = ref(0);
@@ -44,7 +46,9 @@ let maxDownwardDistance = 0;
 let lastDragSample: { time: number; y: number } | undefined;
 let lastVelocityY = 0;
 let gestureResizeObserver: ResizeObserver | undefined;
+let personalResizeObserver: ResizeObserver | undefined;
 let revealCleanupTimer: ReturnType<typeof setTimeout> | undefined;
+let personalBalanceFrame = 0;
 let gestureVersion = 0;
 
 function personalEntries(booth: Booth) {
@@ -55,9 +59,52 @@ function personalEntries(booth: Booth) {
 
 function personalColumns(booth: Booth) {
   const entries = personalEntries(booth);
-  const midpoint = Math.floor(entries.length / 2);
+  const split = Math.min(Math.max(personalSplit.value, 1), entries.length - 1);
 
-  return entries.length === 1 ? [entries] : [entries.slice(0, midpoint), entries.slice(midpoint)];
+  return entries.length === 1 ? [entries] : [entries.slice(0, split), entries.slice(split)];
+}
+
+function balancePersonalColumns() {
+  const items = [
+    ...(personalEntriesElement.value?.querySelectorAll<HTMLElement>(".booth-entry") ?? []),
+  ];
+  if (items.length < 2) {
+    return;
+  }
+
+  const heights = items.map((item) => {
+    const style = getComputedStyle(item);
+
+    return (
+      item.getBoundingClientRect().height +
+      Number.parseFloat(style.marginTop) +
+      Number.parseFloat(style.marginBottom)
+    );
+  });
+  const totalHeight = heights.reduce((total, height) => {
+    return total + height;
+  }, 0);
+  let leftHeight = 0;
+  let closestSplit = items.length - 1;
+  let closestDifference = Number.POSITIVE_INFINITY;
+
+  for (let index = 1; index < items.length; index++) {
+    leftHeight += heights[index - 1]!;
+    const rightHeight = totalHeight - leftHeight;
+    const difference = leftHeight - rightHeight;
+
+    if (difference >= 0 && difference < closestDifference) {
+      closestSplit = index;
+      closestDifference = difference;
+    }
+  }
+
+  personalSplit.value = closestSplit;
+}
+
+function schedulePersonalBalance() {
+  cancelAnimationFrame(personalBalanceFrame);
+  personalBalanceFrame = requestAnimationFrame(balancePersonalColumns);
 }
 
 function boothNames(booth: Booth) {
@@ -269,6 +316,7 @@ watch(
   },
   ([booth, open]) => {
     if (booth && open) {
+      personalSplit.value = Math.ceil(personalEntries(booth).length / 2);
       displayed.value = booth;
       expanded.value = false;
       gestureDragging.value = false;
@@ -280,9 +328,21 @@ watch(
       gestureResizeObserver?.disconnect();
       clearTimeout(revealCleanupTimer);
       gestureVersion++;
+      void nextTick(schedulePersonalBalance);
     }
   },
 );
+
+watch(personalEntriesElement, (element) => {
+  personalResizeObserver?.disconnect();
+  if (!element) {
+    return;
+  }
+
+  personalResizeObserver = new ResizeObserver(schedulePersonalBalance);
+  personalResizeObserver.observe(element);
+  schedulePersonalBalance();
+});
 
 watch(expanded, (open) => {
   if (!open) {
@@ -292,6 +352,8 @@ watch(expanded, (open) => {
 
 onUnmounted(() => {
   gestureResizeObserver?.disconnect();
+  personalResizeObserver?.disconnect();
+  cancelAnimationFrame(personalBalanceFrame);
   clearTimeout(revealCleanupTimer);
   gestureVersion++;
 });
@@ -330,6 +392,7 @@ onUnmounted(() => {
           <DrawerDescription as="div" class="booth-names" @pointerdown.stop @touchstart.stop>
             <template v-if="personalEntries(displayed).length">
               <div
+                ref="personalEntriesElement"
                 class="personal-entries"
                 :class="{ 'is-single': personalEntries(displayed).length === 1 }"
               >
