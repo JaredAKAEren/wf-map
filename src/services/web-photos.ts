@@ -161,6 +161,36 @@ async function list({ boothId }: { boothId: string }): Promise<{ photos: Photo[]
   };
 }
 
+async function listBooths(): Promise<{ boothIds: string[] }> {
+  const database = await openDatabase();
+  const transaction = database.transaction(storeName, "readonly");
+  const request = transaction
+    .objectStore(storeName)
+    .index("boothId")
+    .openKeyCursor(null, "nextunique");
+  const boothIds = await new Promise<string[]>((resolve, reject) => {
+    const ids: string[] = [];
+    request.addEventListener("success", () => {
+      const cursor = request.result;
+      if (!cursor) {
+        resolve(ids);
+
+        return;
+      }
+
+      if (typeof cursor.key === "string") {
+        ids.push(cursor.key);
+      }
+      cursor.continue();
+    });
+    request.addEventListener("error", () => {
+      reject(request.error);
+    });
+  });
+
+  return { boothIds };
+}
+
 async function assign({
   uri,
   boothId,
@@ -269,6 +299,7 @@ export const webPhotos: PhotoService = {
   },
   stageFiles,
   list,
+  listBooths,
   assign,
   thumbnail,
   open: async () => {

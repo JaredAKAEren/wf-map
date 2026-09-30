@@ -15,6 +15,33 @@ function searchResult(page: Page, name: RegExp) {
   return searchResults(page).getByRole("option", { name });
 }
 
+async function waitForSheetMotion(page: Page) {
+  await page.getByRole("dialog", { name: "展位详情" }).evaluate(async (element) => {
+    const nextFrame = () => {
+      return new Promise<void>((resolve) => {
+        element.ownerDocument.defaultView!.requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    };
+
+    // 先让样式更新启动过渡，再等待抽屉和贴图的动画结束。
+    await nextFrame();
+    await nextFrame();
+    const reveal = element.querySelector(".photo-reveal");
+    const animations = [...element.getAnimations(), ...(reveal?.getAnimations() ?? [])];
+    // 贴图高度清理也可能取消过渡，此时继续等待最终布局。
+    await Promise.allSettled(
+      animations.map((animation) => {
+        return animation.finished;
+      }),
+    );
+    // ResizeObserver 的位置补偿还需要下一帧应用到布局。
+    await nextFrame();
+    await nextFrame();
+  });
+}
+
 async function mockNativePhotos(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem("wf-map-test-photo-mode", "normal");
@@ -33,11 +60,18 @@ async function mockNativePhotos(page: Page) {
         },
         {
           name: "ExhibitionPhotos",
-          methods: ["pick", "list", "assign", "thumbnail", "open", "remove", "releaseUnlinked"].map(
-            (name) => {
-              return { name, rtype: "promise" as const };
-            },
-          ),
+          methods: [
+            "pick",
+            "list",
+            "listBooths",
+            "assign",
+            "thumbnail",
+            "open",
+            "remove",
+            "releaseUnlinked",
+          ].map((name) => {
+            return { name, rtype: "promise" as const };
+          }),
         },
       ],
       async nativePromise(
@@ -54,6 +88,9 @@ async function mockNativePhotos(page: Page) {
           }
 
           return { failed: 0, uris: ["content://photo-1", "content://photo-2"] };
+        }
+        if (methodName === "listBooths") {
+          return { boothIds: [] };
         }
         if (methodName === "list") {
           return { photos: [] };
@@ -744,7 +781,7 @@ test("详情仅从把手或标题上拉展开，展开后下拉关闭", async ({
   const handle = page.locator(".sheet-handle");
   const toggle = page.getByRole("button", { name: "展开贴图" });
   await expect(handle).toBeVisible();
-  await page.waitForTimeout(300);
+  await waitForSheetMotion(page);
   await handle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(page.locator(".photo-reveal")).toHaveAttribute("hidden", "until-found");
@@ -825,13 +862,7 @@ test("详情仅从把手或标题上拉展开，展开后下拉关闭", async ({
     type: "touchMove",
     touchPoints: [{ x, y: y - 220 }],
   });
-  await handle.evaluate(() => {
-    return new Promise<void>((resolve) => {
-      requestAnimationFrame(() => {
-        resolve();
-      });
-    });
-  });
+  await waitForSheetMotion(page);
   const fullyPulledY = (await handle.boundingBox())!.y;
   await session.send("Input.dispatchTouchEvent", {
     type: "touchMove",
@@ -850,6 +881,7 @@ test("详情仅从把手或标题上拉展开，展开后下拉关闭", async ({
   );
   await expect(page.getByRole("button", { name: "添加贴图" })).toBeVisible();
 
+  await waitForSheetMotion(page);
   const expandedHandleBox = (await handle.boundingBox())!;
   const expandedX = expandedHandleBox.x + expandedHandleBox.width / 2;
   const expandedY = expandedHandleBox.y + expandedHandleBox.height / 2;
