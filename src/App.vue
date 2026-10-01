@@ -6,7 +6,6 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 import AppNotifications from "./components/AppNotifications.vue";
 import BoothSheet from "./components/BoothSheet.vue";
-import InstallGuide from "./components/InstallGuide.vue";
 import MapSearch from "./components/MapSearch.vue";
 import HallSwitcher from "./components/ui/HallSwitcher.vue";
 import { useBoothMarks } from "./composables/useBoothMarks";
@@ -409,7 +408,6 @@ onUnmounted(() => {
         @select="choose"
         @open="searchOpen = $event"
       />
-      <InstallGuide v-show="!searchOpen" />
     </header>
     <HallSwitcher
       v-if="ready"
@@ -464,8 +462,7 @@ onUnmounted(() => {
   right: var(--screen-padding);
   z-index: 5;
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
+  min-height: var(--control-size);
 }
 
 .hall-position {
