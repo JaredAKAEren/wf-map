@@ -12,13 +12,20 @@ import {
 import { nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
 
 import type { Booth } from "../data/exhibition";
+import FavoriteButton from "./FavoriteButton.vue";
 import PhotoPanel from "./PhotoPanel.vue";
 import AppIcon from "./ui/AppIcon.vue";
 
-const props = defineProps<{ booth?: Booth; open: boolean }>();
-const emit = defineEmits<{ close: [] }>();
+const props = defineProps<{
+  booth?: Booth;
+  open: boolean;
+  favorite: boolean;
+  favoriteDisabled: boolean;
+}>();
+const emit = defineEmits<{ close: []; favorite: [] }>();
 
 const displayed = shallowRef(props.booth);
+const displayedFavorite = ref(props.favorite);
 const expanded = ref(false);
 const personalEntriesElement = ref<HTMLElement>();
 const personalSplit = ref(1);
@@ -333,6 +340,17 @@ watch(
   },
 );
 
+watch(
+  () => {
+    return [props.favorite, props.open] as const;
+  },
+  ([favorite, open]) => {
+    if (open) {
+      displayedFavorite.value = favorite;
+    }
+  },
+);
+
 watch(personalEntriesElement, (element) => {
   personalResizeObserver?.disconnect();
   if (!element) {
@@ -385,7 +403,15 @@ onUnmounted(() => {
           >
             <DrawerHandle class="sheet-handle"><span /></DrawerHandle>
             <div class="sheet-heading">
-              <DrawerTitle class="sheet-code">{{ displayed.code }}</DrawerTitle>
+              <div class="sheet-number">
+                <DrawerTitle class="sheet-code">{{ displayed.code }}</DrawerTitle>
+                <FavoriteButton
+                  :key="displayed.id"
+                  :active="displayedFavorite"
+                  :disabled="favoriteDisabled"
+                  @toggle="emit('favorite')"
+                />
+              </div>
               <span>{{ displayed.hall }}馆</span>
             </div>
           </div>
@@ -513,9 +539,16 @@ onUnmounted(() => {
 
 .sheet-code {
   font-size: 28px;
+  line-height: 44px;
+}
+
+.sheet-number {
+  display: flex;
+  align-items: center;
 }
 
 .sheet-heading span {
+  margin-left: auto;
   color: var(--color-muted);
   font-size: 12px;
 }

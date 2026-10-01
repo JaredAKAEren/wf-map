@@ -9,6 +9,7 @@ import BoothSheet from "./components/BoothSheet.vue";
 import InstallGuide from "./components/InstallGuide.vue";
 import MapSearch from "./components/MapSearch.vue";
 import HallSwitcher from "./components/ui/HallSwitcher.vue";
+import { useBoothMarks } from "./composables/useBoothMarks";
 import { useMapViewport } from "./composables/useMapViewport";
 import { booths, halls, isHall, type Booth, type Hall } from "./data/exhibition";
 import type { Point, View } from "./domain/viewport";
@@ -32,6 +33,12 @@ const ready = ref(false);
 const pageHeight = ref("100dvh");
 const settledMaps = new Set<string>();
 const mapBase = import.meta.env.BASE_URL;
+
+const { favoriteIds, photoIds, favoritesReady, favoriteSaving, photosReady, toggleFavorite } =
+  useBoothMarks((message) => {
+    notice.value = message;
+  });
+
 let selectionVersion = 0;
 let hallScrub: HallScrub | undefined;
 let launchScreenHidden = false;
@@ -395,6 +402,10 @@ onUnmounted(() => {
       <MapSearch
         ref="search"
         :preferred-hall="hall || undefined"
+        :photo-ids="photoIds"
+        :favorite-ids="favoriteIds"
+        :photos-ready="photosReady"
+        :favorites-ready="favoritesReady"
         @select="choose"
         @open="searchOpen = $event"
       />
@@ -415,6 +426,9 @@ onUnmounted(() => {
       class="sheet-position"
       :booth="selected"
       :open="Boolean(selected) && !searchOpen"
+      :favorite="Boolean(selected && favoriteIds.has(selected.id))"
+      :favorite-disabled="!favoritesReady || favoriteSaving"
+      @favorite="selected && toggleFavorite(selected.id)"
       @close="selectedId = ''"
     />
   </main>

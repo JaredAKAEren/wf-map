@@ -9,20 +9,40 @@ import {
 import { computed, nextTick, ref, watch } from "vue";
 
 import { booths, type Booth, type Hall } from "../data/exhibition";
-import { searchBooths, type BoothSearchResult } from "../domain/map";
+import { filterBooths, type BoothFilters } from "../domain/booth-filter";
+import type { BoothSearchResult } from "../domain/map";
+import SearchFilters from "./SearchFilters.vue";
 import AppIcon from "./ui/AppIcon.vue";
 
-const props = defineProps<{ preferredHall?: Hall }>();
+const props = defineProps<{
+  preferredHall?: Hall;
+  photoIds: ReadonlySet<string>;
+  favoriteIds: ReadonlySet<string>;
+  photosReady: boolean;
+  favoritesReady: boolean;
+}>();
 const emit = defineEmits<{ select: [booth: Booth]; open: [value: boolean] }>();
+
 const opened = ref(false);
 const input = ref<{ $el: HTMLInputElement }>();
 const resultViewport = ref<{ $el: HTMLElement }>();
 const trigger = ref<HTMLButtonElement>();
 const query = ref("");
+const filters = ref<BoothFilters>({ photos: false, favorites: false });
 const hasHiddenResultsAbove = ref(false);
 const hasHiddenResultsBelow = ref(false);
 const results = computed(() => {
-  return searchBooths(query.value, booths, props.preferredHall);
+  return filterBooths(
+    query.value,
+    booths,
+    filters.value,
+    props.photoIds,
+    props.favoriteIds,
+    props.preferredHall,
+  );
+});
+const filtering = computed(() => {
+  return filters.value.photos || filters.value.favorites;
 });
 
 function inputElement() {
@@ -114,6 +134,11 @@ function handleComboboxOpen(value: boolean) {
 
 watch([opened, results], async () => {
   await nextTick();
+  const element = resultViewport.value?.$el;
+  if (element) {
+    element.scrollTop = 0;
+  }
+
   requestAnimationFrame(() => {
     updateResultFades();
   });
@@ -169,6 +194,13 @@ defineExpose({ close });
             <button class="ui-text-button" type="button" @click="close()">取消</button>
           </form>
 
+          <SearchFilters
+            v-model="filters"
+            class="search-filter-position"
+            :photos-ready="photosReady"
+            :favorites-ready="favoritesReady"
+          />
+
           <ComboboxContent
             as="section"
             class="search-results ui-surface"
@@ -177,11 +209,15 @@ defineExpose({ close });
             @focus-outside.prevent
             @interact-outside.prevent
           >
-            <p v-if="!query.trim()" class="ui-muted">
+            <p v-if="!query.trim() && !filtering" class="ui-muted">
               输入展商名称、拼音或展位号<br />目前可搜索 W1—W5 展位
             </p>
             <p v-else-if="!results.length" class="ui-muted" role="status">
-              未找到匹配展位。当前可搜索 W1—W5 展位。
+              {{
+                filtering
+                  ? "没有符合筛选条件的展位，可调整筛选或搜索内容。"
+                  : "未找到匹配展位。当前可搜索 W1—W5 展位。"
+              }}
             </p>
             <template v-else>
               <p class="ui-muted" role="status">{{ results.length }} 个匹配展位</p>
@@ -235,6 +271,16 @@ defineExpose({ close });
   transform-origin: 24px 24px;
 }
 
+.search-combobox {
+  min-width: 0;
+}
+
+.search-filter-position {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
 .search-expand-enter-active {
   transition:
     transform var(--duration-normal),
@@ -261,6 +307,7 @@ defineExpose({ close });
   padding: 0 16px;
   min-height: var(--control-size);
   border-radius: var(--radius-pill);
+  margin-right: calc(var(--control-size) + 8px);
 }
 
 .search-form input {

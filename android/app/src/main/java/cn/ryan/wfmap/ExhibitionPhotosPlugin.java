@@ -121,6 +121,22 @@ public class ExhibitionPhotosPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void listBooths(PluginCall call) {
+        worker.execute(() -> {
+            try (Cursor cursor = store.getReadableDatabase().query(true, "photos",
+                    new String[]{"booth"}, null, null, null, null, "booth", null)) {
+                JSArray ids = new JSArray();
+                while (cursor.moveToNext()) {
+                    ids.put(cursor.getString(0));
+                }
+                JSObject result = new JSObject();
+                result.put("boothIds", ids);
+                call.resolve(result);
+            } catch (Exception error) { call.reject("无法读取贴图展位", error); }
+        });
+    }
+
+    @PluginMethod
     public void assign(PluginCall call) {
         String uri = call.getString("uri"); String booth = call.getString("boothId");
         if (uri == null || booth == null || !booth.startsWith("wf2026/")) { call.reject("无效的展位或照片"); return; }

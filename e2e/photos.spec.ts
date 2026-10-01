@@ -41,11 +41,18 @@ async function prepare(page: Page, count = 2) {
         },
         {
           name: "ExhibitionPhotos",
-          methods: ["pick", "list", "assign", "thumbnail", "open", "remove", "releaseUnlinked"].map(
-            (name) => {
-              return { name, rtype: "promise" };
-            },
-          ),
+          methods: [
+            "pick",
+            "list",
+            "listBooths",
+            "assign",
+            "thumbnail",
+            "open",
+            "remove",
+            "releaseUnlinked",
+          ].map((name) => {
+            return { name, rtype: "promise" };
+          }),
         },
       ],
       async nativePromise(plugin: string, method: string, options: Record<string, unknown> = {}) {
@@ -75,6 +82,16 @@ async function prepare(page: Page, count = 2) {
         switch (method) {
           case "pick":
             return { uris: picked, failed: 0 };
+          case "listBooths":
+            return {
+              boothIds: [
+                ...new Set(
+                  state.rows.map((row) => {
+                    return row.boothId;
+                  }),
+                ),
+              ],
+            };
           case "list":
             return { photos: snapshot };
           case "assign": {

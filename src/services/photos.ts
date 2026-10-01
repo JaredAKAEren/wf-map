@@ -11,6 +11,7 @@ export interface PhotoService {
   pick(): Promise<{ uris: string[]; failed: number }>;
   stageFiles(files: readonly File[]): Promise<{ uris: string[]; failed: number }>;
   list(options: { boothId: string }): Promise<{ photos: Photo[] }>;
+  listBooths(): Promise<{ boothIds: string[] }>;
   assign(options: {
     uri: string;
     boothId: string;
@@ -25,4 +26,58 @@ export interface PhotoService {
 
 export const nativePhotos = Capacitor.getPlatform() === "android";
 const nativePlugin = registerPlugin<PhotoService>("ExhibitionPhotos");
-export const photos: PhotoService = nativePhotos ? nativePlugin : webPhotos;
+const service = nativePhotos ? nativePlugin : webPhotos;
+const changeListeners = new Set<() => void>();
+
+export function onPhotosChanged(listener: () => void) {
+  changeListeners.add(listener);
+
+  return () => {
+    changeListeners.delete(listener);
+  };
+}
+
+function notifyChange() {
+  for (const listener of changeListeners) {
+    listener();
+  }
+}
+
+export const photos: PhotoService = {
+  pick: () => {
+    return service.pick();
+  },
+  stageFiles: (files) => {
+    return service.stageFiles(files);
+  },
+  list: (options) => {
+    return service.list(options);
+  },
+  listBooths: () => {
+    return service.listBooths();
+  },
+  assign: async (options) => {
+    const result = await service.assign(options);
+    if (!result.conflict) {
+      notifyChange();
+    }
+
+    return result;
+  },
+  thumbnail: (options) => {
+    return service.thumbnail(options);
+  },
+  open: (options) => {
+    return service.open(options);
+  },
+  original: (options) => {
+    return service.original(options);
+  },
+  remove: async (options) => {
+    await service.remove(options);
+    notifyChange();
+  },
+  releaseUnlinked: (options) => {
+    return service.releaseUnlinked(options);
+  },
+};
