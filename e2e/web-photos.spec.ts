@@ -87,7 +87,7 @@ test("网页贴图可保存、去重、改绑并解除关联", async ({ page }) 
   await expect(page.getByRole("button", { name: "查看原图" })).toHaveCount(1);
   await page.getByRole("button", { name: "查看原图" }).click();
   await expect(page.getByRole("dialog", { name: "展位贴图原图" })).toBeVisible();
-  await page.getByRole("button", { name: "关闭原图" }).click();
+  await page.keyboard.press("Escape");
 
   await page.getByRole("button", { name: "查看原图" }).click({ button: "right" });
   await page.getByRole("menuitem", { name: "解除关联" }).click();

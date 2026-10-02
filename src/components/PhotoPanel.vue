@@ -5,6 +5,7 @@ import { booths, type Booth } from "../data/exhibition";
 import { nativePhotos, photos, type Photo } from "../services/photos";
 import PhotoReassignDialog from "./PhotoReassignDialog.vue";
 import PhotoTile from "./PhotoTile.vue";
+import PhotoViewer from "./PhotoViewer.vue";
 import AppIcon from "./ui/AppIcon.vue";
 import LoadingIcon from "./ui/LoadingIcon.vue";
 
@@ -26,8 +27,7 @@ const content = ref<HTMLElement>();
 const height = ref<number>();
 const reassignDialog = ref<InstanceType<typeof PhotoReassignDialog>>();
 const fileInput = ref<HTMLInputElement>();
-const viewer = ref<HTMLDialogElement>();
-const viewerUrl = ref("");
+const viewerUri = ref("");
 let request = 0;
 let generation = 0;
 let observer: ResizeObserver | undefined;
@@ -226,20 +226,16 @@ async function remove(uri: string) {
 }
 
 async function open(uri: string) {
+  if (!props.active) {
+    return;
+  }
+
   const token = generation;
   try {
     if (nativePhotos) {
       await photos.open({ uri });
     } else {
-      const blob = await photos.original({ uri });
-      if (generation !== token || !props.active) {
-        return;
-      }
-
-      closeViewer();
-      viewerUrl.value = URL.createObjectURL(blob);
-      await nextTick();
-      viewer.value?.showModal();
+      viewerUri.value = uri;
     }
   } catch {
     if (generation === token && props.active) {
@@ -249,13 +245,7 @@ async function open(uri: string) {
 }
 
 function closeViewer() {
-  if (viewer.value?.open) {
-    viewer.value.close();
-  }
-  if (viewerUrl.value) {
-    URL.revokeObjectURL(viewerUrl.value);
-    viewerUrl.value = "";
-  }
+  viewerUri.value = "";
 }
 
 function pinLeavingPhoto(element: Element) {
@@ -391,18 +381,12 @@ onUnmounted(() => {
         @change="selectWebFiles"
       />
       <PhotoReassignDialog ref="reassignDialog" />
-      <dialog
-        v-if="!nativePhotos"
-        ref="viewer"
-        class="photo-viewer"
-        aria-label="展位贴图原图"
+      <PhotoViewer
+        v-if="!nativePhotos && viewerUri"
+        :items="orderedItems"
+        :initial-uri="viewerUri"
         @close="closeViewer"
-      >
-        <button class="viewer-close ui-surface" aria-label="关闭原图" @click="closeViewer">
-          <AppIcon name="close" />
-        </button>
-        <img v-if="viewerUrl" :src="viewerUrl" alt="展位贴图原图" />
-      </dialog>
+      />
     </section>
   </div>
 </template>
@@ -421,37 +405,6 @@ onUnmounted(() => {
 
 .file-input {
   display: none;
-}
-
-.photo-viewer {
-  max-width: 100vw;
-  max-height: 100dvh;
-  width: 100vw;
-  height: 100dvh;
-  border: 0;
-  padding: 16px;
-  background: rgb(22 18 14 / 94%);
-}
-
-.photo-viewer::backdrop {
-  background: rgb(22 18 14 / 80%);
-}
-
-.photo-viewer img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.viewer-close {
-  position: absolute;
-  top: calc(16px + env(safe-area-inset-top));
-  right: 16px;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-pill);
 }
 
 h3 {
