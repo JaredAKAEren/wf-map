@@ -467,11 +467,11 @@ onUnmounted(() => {
 
 .hall-position {
   position: absolute;
-  top: calc(100% - 66px - env(safe-area-inset-bottom));
+  top: calc(100% - 93px - env(safe-area-inset-bottom));
   transition: top var(--duration-normal);
   left: 50%;
   transform: translateX(-50%);
-  width: min(330px, calc(100% - 24px));
+  width: min(300px, calc(100% - 40px));
 }
 
 .has-selection .hall-position {
