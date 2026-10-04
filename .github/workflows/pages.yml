@@ -2,7 +2,7 @@ name: GitHub Pages
 
 on:
   push:
-    branches: [main, fix/hall-switcher-reachability]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
