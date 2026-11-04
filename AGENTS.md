@@ -6,7 +6,7 @@
 
 工具版本以 .node-version、package.json、pnpm-workspace.yaml 和 pnpm-lock.yaml 为准。所有项目命令从仓库根目录通过 Vite+ 执行，详见 README.md。检查规则的事实来源为 vite.config.ts、stylelint.config.mjs 和 commitlint.config.mjs；修复代码满足规则，不为通过检查随意关闭规则。
 
-提交前的实际入口是 .vite-hooks/pre-commit 和 .vite-hooks/commit-msg。提交说明使用 Conventional Commits 类型，冒号后的主题包含中文。用户未要求提交时不自动创建提交或推送。
+提交前的实际入口是 .vite-hooks/pre-commit 和 .vite-hooks/commit-msg。提交说明使用 Conventional Commits 类型，冒号后的主题包含中文。用户未要求提交时不自动创建提交或推送。提交作者固定为 `JaredAKAEren <71142281+JaredAKAEren@users.noreply.github.com>`。创建提交前若 `git config user.email` 不是这个地址，先在仓库本地写入 `user.name` 与 `user.email`。不要使用 `cursoragent@cursor.com` 或 `JaredAKAEren@users.noreply.github.com`。
 
 Vue 模板须通过 vue-tsc；通用 TypeScript 检查不能替代模板检查。改动搜索、坐标、照片归属或路径规则时，验证公开行为和边界条件。改动 Android 桥接时运行 APK 构建和 Android lint；浏览器替身不代表照片授权、重启或覆盖安装已通过真机验收。
 
@@ -16,7 +16,7 @@ Android 应用固定竖屏，后续开发无需新增横屏适配；已有响应
 
 ## Cursor Cloud
 
-环境启动后，开发服务器监听 `http://127.0.0.1:5173`。项目命令从仓库根目录执行 `vp`。镜像自带的 Node.js 与 `.node-version` 不一致；`vp` 会按项目锁定的 Node.js 24.20.0 和 pnpm 11.25.0 运行。此环境不包含 Android SDK，生成 APK 仍需本机 JDK 21 与 Android SDK。
+环境启动后，开发服务器监听 `http://127.0.0.1:5173`，并在仓库本地写入上述提交作者。项目命令从仓库根目录执行 `vp`。镜像自带的 Node.js 与 `.node-version` 不一致；`vp` 会按项目锁定的 Node.js 24.20.0 和 pnpm 11.25.0 运行。此环境不包含 Android SDK，生成 APK 仍需本机 JDK 21 与 Android SDK。
 
 ## 代码风格
 
